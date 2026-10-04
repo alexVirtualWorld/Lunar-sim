@@ -1,0 +1,37 @@
+{
+  "name": "lunar-rover-threejs-real-dem",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"vite --host 0.0.0.0\" \"node server/index.mjs\"",
+    "build": "vite build",
+    "start": "node server/index.mjs",
+    "data:moon": "python tools/lunar-data/download_moon_data.py",
+    "data:moon:validate": "python tools/lunar-data/download_moon_data.py --validate-only",
+    "data:global": "python tools/lunar-data/download_moon_data.py --part global",
+    "data:polar": "python tools/lunar-data/download_moon_data.py --part polar",
+    "data:global:index": "python tools/lunar-data/build_global.py --index-only --max-lod 4",
+    "data:global:stitch": "python tools/lunar-data/stitch_global.py",
+    "data:global:validate-seams": "python tools/lunar-data/stitch_global.py --validate-only",
+    "data:polar:stitch": "python tools/lunar-data/stitch_polar_boundary.py",
+    "data:polar:validate": "python tools/lunar-data/stitch_polar_boundary.py --validate-only",
+    "data:polar:test": "node tools/lunar-data/test_polar_runtime.mjs && node tools/lunar-data/test_polar_terrain_manager.mjs && node tools/lunar-data/test_polar_seam_v2.mjs"
+  },
+  "dependencies": {
+    "astronomy-engine": "^2.1.19",
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "vite": "^7.1.7"
+  },
+  "description": "Browser-based global lunar rover simulator using real lunar DEM data.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

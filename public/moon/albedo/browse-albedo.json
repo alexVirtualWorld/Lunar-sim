@@ -1,0 +1,29 @@
+{
+  "source": "albedo.tif",
+  "sourceSize": [
+    16384,
+    8192
+  ],
+  "longitudeLayout": "-180..180; 0 degrees centered",
+  "latitudeLayout": "north at top",
+  "colorSpace": "sRGB",
+  "sourceCredit": "NASA GSFC / LRO / LROC",
+  "sourceReference": "https://svs.gsfc.nasa.gov/4720/",
+  "textures": [
+    {
+      "path": "browse-2048.webp",
+      "width": 2048,
+      "height": 1024
+    },
+    {
+      "path": "browse-4096.webp",
+      "width": 4096,
+      "height": 2048
+    },
+    {
+      "path": "browse-8192.webp",
+      "width": 8192,
+      "height": 4096
+    }
+  ]
+}

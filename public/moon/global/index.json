@@ -1,0 +1,330 @@
+{
+  "version": 2,
+  "mode": "global-geodetic",
+  "dataset": "SLDEM2015 512 ppd (LOLA/LRO + SELENE/Kaguya TC)",
+  "referenceRadiusMeters": 1737400.0,
+  "nativeResolutionMeters": 59.225293797166955,
+  "coverage": {
+    "south": -60.0,
+    "north": 60.0,
+    "west": 0.0,
+    "east": 360.0
+  },
+  "blockSizeDegrees": {
+    "latitude": 30.0,
+    "longitude": 45.0
+  },
+  "samplesPerTile": 65,
+  "maxLod": 4,
+  "packTiles": 256,
+  "blocks": [
+    {
+      "id": "60S_30S_E000_E045",
+      "south": -60.0,
+      "north": -30.0,
+      "west": 0.0,
+      "east": 45.0,
+      "path": "blocks/60S_30S_E000_E045/manifest.json",
+      "sourceProduct": "SLDEM2015_512_60S_30S_000_045"
+    },
+    {
+      "id": "60S_30S_E045_E090",
+      "south": -60.0,
+      "north": -30.0,
+      "west": 45.0,
+      "east": 90.0,
+      "path": "blocks/60S_30S_E045_E090/manifest.json",
+      "sourceProduct": "SLDEM2015_512_60S_30S_045_090"
+    },
+    {
+      "id": "60S_30S_E090_E135",
+      "south": -60.0,
+      "north": -30.0,
+      "west": 90.0,
+      "east": 135.0,
+      "path": "blocks/60S_30S_E090_E135/manifest.json",
+      "sourceProduct": "SLDEM2015_512_60S_30S_090_135"
+    },
+    {
+      "id": "60S_30S_E135_E180",
+      "south": -60.0,
+      "north": -30.0,
+      "west": 135.0,
+      "east": 180.0,
+      "path": "blocks/60S_30S_E135_E180/manifest.json",
+      "sourceProduct": "SLDEM2015_512_60S_30S_135_180"
+    },
+    {
+      "id": "60S_30S_E180_E225",
+      "south": -60.0,
+      "north": -30.0,
+      "west": 180.0,
+      "east": 225.0,
+      "path": "blocks/60S_30S_E180_E225/manifest.json",
+      "sourceProduct": "SLDEM2015_512_60S_30S_180_225"
+    },
+    {
+      "id": "60S_30S_E225_E270",
+      "south": -60.0,
+      "north": -30.0,
+      "west": 225.0,
+      "east": 270.0,
+      "path": "blocks/60S_30S_E225_E270/manifest.json",
+      "sourceProduct": "SLDEM2015_512_60S_30S_225_270"
+    },
+    {
+      "id": "60S_30S_E270_E315",
+      "south": -60.0,
+      "north": -30.0,
+      "west": 270.0,
+      "east": 315.0,
+      "path": "blocks/60S_30S_E270_E315/manifest.json",
+      "sourceProduct": "SLDEM2015_512_60S_30S_270_315"
+    },
+    {
+      "id": "60S_30S_E315_E360",
+      "south": -60.0,
+      "north": -30.0,
+      "west": 315.0,
+      "east": 360.0,
+      "path": "blocks/60S_30S_E315_E360/manifest.json",
+      "sourceProduct": "SLDEM2015_512_60S_30S_315_360"
+    },
+    {
+      "id": "30S_00S_E000_E045",
+      "south": -30.0,
+      "north": 0.0,
+      "west": 0.0,
+      "east": 45.0,
+      "path": "blocks/30S_00S_E000_E045/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30S_00S_000_045"
+    },
+    {
+      "id": "30S_00S_E045_E090",
+      "south": -30.0,
+      "north": 0.0,
+      "west": 45.0,
+      "east": 90.0,
+      "path": "blocks/30S_00S_E045_E090/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30S_00S_045_090"
+    },
+    {
+      "id": "30S_00S_E090_E135",
+      "south": -30.0,
+      "north": 0.0,
+      "west": 90.0,
+      "east": 135.0,
+      "path": "blocks/30S_00S_E090_E135/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30S_00S_090_135"
+    },
+    {
+      "id": "30S_00S_E135_E180",
+      "south": -30.0,
+      "north": 0.0,
+      "west": 135.0,
+      "east": 180.0,
+      "path": "blocks/30S_00S_E135_E180/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30S_00S_135_180"
+    },
+    {
+      "id": "30S_00S_E180_E225",
+      "south": -30.0,
+      "north": 0.0,
+      "west": 180.0,
+      "east": 225.0,
+      "path": "blocks/30S_00S_E180_E225/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30S_00S_180_225"
+    },
+    {
+      "id": "30S_00S_E225_E270",
+      "south": -30.0,
+      "north": 0.0,
+      "west": 225.0,
+      "east": 270.0,
+      "path": "blocks/30S_00S_E225_E270/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30S_00S_225_270"
+    },
+    {
+      "id": "30S_00S_E270_E315",
+      "south": -30.0,
+      "north": 0.0,
+      "west": 270.0,
+      "east": 315.0,
+      "path": "blocks/30S_00S_E270_E315/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30S_00S_270_315"
+    },
+    {
+      "id": "30S_00S_E315_E360",
+      "south": -30.0,
+      "north": 0.0,
+      "west": 315.0,
+      "east": 360.0,
+      "path": "blocks/30S_00S_E315_E360/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30S_00S_315_360"
+    },
+    {
+      "id": "00N_30N_E000_E045",
+      "south": 0.0,
+      "north": 30.0,
+      "west": 0.0,
+      "east": 45.0,
+      "path": "blocks/00N_30N_E000_E045/manifest.json",
+      "sourceProduct": "SLDEM2015_512_00N_30N_000_045"
+    },
+    {
+      "id": "00N_30N_E045_E090",
+      "south": 0.0,
+      "north": 30.0,
+      "west": 45.0,
+      "east": 90.0,
+      "path": "blocks/00N_30N_E045_E090/manifest.json",
+      "sourceProduct": "SLDEM2015_512_00N_30N_045_090"
+    },
+    {
+      "id": "00N_30N_E090_E135",
+      "south": 0.0,
+      "north": 30.0,
+      "west": 90.0,
+      "east": 135.0,
+      "path": "blocks/00N_30N_E090_E135/manifest.json",
+      "sourceProduct": "SLDEM2015_512_00N_30N_090_135"
+    },
+    {
+      "id": "00N_30N_E135_E180",
+      "south": 0.0,
+      "north": 30.0,
+      "west": 135.0,
+      "east": 180.0,
+      "path": "blocks/00N_30N_E135_E180/manifest.json",
+      "sourceProduct": "SLDEM2015_512_00N_30N_135_180"
+    },
+    {
+      "id": "00N_30N_E180_E225",
+      "south": 0.0,
+      "north": 30.0,
+      "west": 180.0,
+      "east": 225.0,
+      "path": "blocks/00N_30N_E180_E225/manifest.json",
+      "sourceProduct": "SLDEM2015_512_00N_30N_180_225"
+    },
+    {
+      "id": "00N_30N_E225_E270",
+      "south": 0.0,
+      "north": 30.0,
+      "west": 225.0,
+      "east": 270.0,
+      "path": "blocks/00N_30N_E225_E270/manifest.json",
+      "sourceProduct": "SLDEM2015_512_00N_30N_225_270"
+    },
+    {
+      "id": "00N_30N_E270_E315",
+      "south": 0.0,
+      "north": 30.0,
+      "west": 270.0,
+      "east": 315.0,
+      "path": "blocks/00N_30N_E270_E315/manifest.json",
+      "sourceProduct": "SLDEM2015_512_00N_30N_270_315"
+    },
+    {
+      "id": "00N_30N_E315_E360",
+      "south": 0.0,
+      "north": 30.0,
+      "west": 315.0,
+      "east": 360.0,
+      "path": "blocks/00N_30N_E315_E360/manifest.json",
+      "sourceProduct": "SLDEM2015_512_00N_30N_315_360"
+    },
+    {
+      "id": "30N_60N_E000_E045",
+      "south": 30.0,
+      "north": 60.0,
+      "west": 0.0,
+      "east": 45.0,
+      "path": "blocks/30N_60N_E000_E045/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30N_60N_000_045"
+    },
+    {
+      "id": "30N_60N_E045_E090",
+      "south": 30.0,
+      "north": 60.0,
+      "west": 45.0,
+      "east": 90.0,
+      "path": "blocks/30N_60N_E045_E090/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30N_60N_045_090"
+    },
+    {
+      "id": "30N_60N_E090_E135",
+      "south": 30.0,
+      "north": 60.0,
+      "west": 90.0,
+      "east": 135.0,
+      "path": "blocks/30N_60N_E090_E135/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30N_60N_090_135"
+    },
+    {
+      "id": "30N_60N_E135_E180",
+      "south": 30.0,
+      "north": 60.0,
+      "west": 135.0,
+      "east": 180.0,
+      "path": "blocks/30N_60N_E135_E180/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30N_60N_135_180"
+    },
+    {
+      "id": "30N_60N_E180_E225",
+      "south": 30.0,
+      "north": 60.0,
+      "west": 180.0,
+      "east": 225.0,
+      "path": "blocks/30N_60N_E180_E225/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30N_60N_180_225"
+    },
+    {
+      "id": "30N_60N_E225_E270",
+      "south": 30.0,
+      "north": 60.0,
+      "west": 225.0,
+      "east": 270.0,
+      "path": "blocks/30N_60N_E225_E270/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30N_60N_225_270"
+    },
+    {
+      "id": "30N_60N_E270_E315",
+      "south": 30.0,
+      "north": 60.0,
+      "west": 270.0,
+      "east": 315.0,
+      "path": "blocks/30N_60N_E270_E315/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30N_60N_270_315"
+    },
+    {
+      "id": "30N_60N_E315_E360",
+      "south": 30.0,
+      "north": 60.0,
+      "west": 315.0,
+      "east": 360.0,
+      "path": "blocks/30N_60N_E315_E360/manifest.json",
+      "sourceProduct": "SLDEM2015_512_30N_60N_315_360"
+    }
+  ],
+  "polar": {
+    "north": {
+      "coverage": {
+        "south": 60.0,
+        "north": 90.0
+      },
+      "dataset": "LOLA polar DEM",
+      "status": "source-not-configured"
+    },
+    "south": {
+      "coverage": {
+        "south": -90.0,
+        "north": -60.0
+      },
+      "dataset": "LOLA polar DEM",
+      "status": "source-not-configured"
+    }
+  },
+  "attribution": "SLDEM2015: Barker et al. (2016), LOLA/LRO + SELENE Terrain Camera",
+  "globalCoverage": false
+}

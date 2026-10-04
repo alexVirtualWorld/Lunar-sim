@@ -1,0 +1,38 @@
+# Node
+node_modules/
+dist/
+
+# Environment / local secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Lunar data caches / raw downloads
+tools/lunar-data/cache/
+tools/lunar-data/cache_polar/
+tools/lunar-data/backups/
+tools/cache/
+
+# Generated global lunar DEM
+public/moon/global/blocks/*
+!public/moon/global/blocks/README.md
+public/moon/global/polar/*
+!public/moon/global/polar/README.md
+
+# Local build/debug artifacts
+*.bak_*
+*.bad_transition_*
+*.tmp
+*.log
