@@ -79,3 +79,41 @@ Validation after synchronization:
 - Isolated Edge smoke test passed for all four language switches and the Debug HUD, with no uncaught JavaScript exceptions.
 - `npm ci` reported 0 vulnerabilities.
 - Generated lunar DEM directories remained untracked and were not copied.
+
+## 2026-10-04 — Defer driving DEM until explicit Drive entry
+
+- Removed main.js's 120 ms landing prefetch timer, obsolete serial state, and selection-triggered prefetch call.
+- Initial default selection and subsequent Browse selections now request only overview terrain (LOD0–2); they do not request the selected block's maximum-LOD driving samples.
+- Explicit Drive entry still uses the existing switchSite/activateAt path, ground validation, critical landing meshes, and progressive far-field loading.
+- Applied to both the development project and the open-source copy.
+- Backups: src/main.js and this record file, suffix .bak_20261004_085015.
+- Validation: JavaScript syntax, UI/i18n regression, and Vite production build passed.
+- Browser network regression with browser cache disabled and a complete LOD8 dataset: initial Browse and two selections produced zero LOD3–8 pack requests. After clicking Drive, detailed terrain was requested, driving became available, and Browse/Drive return worked. No uncaught JavaScript exceptions.
+- This removes premature driving-data requests; it does not eliminate the landing preparation required on the first explicit Drive entry. No measured speedup is claimed.
+
+## 2026-10-04 — Development startup watcher and Browse imagery performance
+
+### Changes
+- Added vite.config.js with dependency scanning limited to index.html.
+- Excluded public/, offline tools/, docs/, and .bak_* files from development watching. Ignoring parent directories prevents recursive watcher registration across generated DEM data.
+- Source directories remain watched. Public assets are still served normally; production public-file copying is unchanged. After changing public assets, manually refresh the browser (automatic asset-triggered reload is disabled).
+- LunarBrowse.js now uses 2K imagery for the initial global view. 4K requires camera distance below 270; 8K below 180. Upgrades wait for completed overview terrain and 2.5 seconds without camera interaction, in active/nonbusy Browse mode.
+- Upgrade eligibility is checked both before fetching and before assigning the texture. A high-resolution upload may still briefly stall when a close-view upgrade occurs; it is removed from the default startup path, not made asynchronous.
+- Same vite.config.js and LunarBrowse.js installed in development and open-source directories.
+- Restart npm run dev to ensure the newly added Vite configuration is loaded.
+
+### Backups
+- Existing LunarBrowse.js and record files backed up with suffix .bak_20261004_092514 in both relevant directories.
+- vite.config.js is new; remove that new file to revert configuration, and restore the corresponding Browse backup.
+
+### Validation
+- Full LOD8 data kept in place.
+- Before: independent first-page HTTP requests timed out at 12/20 seconds; server profiler attributed about 13.2 of 15 seconds to filesystem watcher setup.
+- After: fresh-server first-page HTTP response about 191 ms (Vite reported readiness in 1.817 seconds in that run).
+- Comparable isolated headless Edge measurements: first contentful paint changed from 5.904 s to 0.856 s; first WebGL draw from 5.963 s to 0.899 s. These are local test results, not guaranteed timings on every browser.
+- Initial texture upload: only 2K, about 40 ms in the measured run, instead of the previous 8K upload taking about 661 ms. Warm reload 2K upload was about 93 ms.
+- Actual watcher inspection: 14 watched directories; src present; public/tools absent.
+- High-LOD asset serving verified: LOD8 pack returned HTTP 200 and 2,163,200 bytes.
+- Browser interaction regression: no startup 8K request; close zoom plus settled interaction successfully upgraded to 8K; no LOD3–8 requests on startup or two Browse selections; explicit Drive requested detailed data and entered Drive; Browse/Drive return and language refresh passed; no uncaught JavaScript exceptions.
+- Syntax checks, Browse filter/stable-label regression, UI/i18n regression, and Vite production build passed.
+- Temporary test servers/browser processes closed. No Git commit or push performed.

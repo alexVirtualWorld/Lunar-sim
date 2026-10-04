@@ -396,27 +396,12 @@ let switching = false;
 let mode = 'browse';
 let driveReady = false;
 let roverLoadPromise = null;
-let landingPrefetchTimer = null;
-let landingPrefetchSerial = 0;
 
 function ensureRoverLoaded() {
   if (!roverLoadPromise) roverLoadPromise = rover.load();
   return roverLoadPromise;
 }
 
-function scheduleLandingPrefetch(geo, delayMs = 120) {
-  if (!geo || !coveredLatitude(geo.lat) || !Number.isFinite(geo.lon)) return;
-  if (landingPrefetchTimer) clearTimeout(landingPrefetchTimer);
-  const serial = ++landingPrefetchSerial;
-  landingPrefetchTimer = setTimeout(() => {
-    landingPrefetchTimer = null;
-    terrain.prefetchLanding(geo.lat, geo.lon)
-      .catch(err => console.warn('[Landing prefetch]', err))
-      .finally(() => {
-        if (serial !== landingPrefetchSerial) return;
-      });
-  }, delayMs);
-}
 const browsePanel = document.querySelector('#browse-panel');
 const selectedLabel = document.querySelector('#selected-coords');
 const browseMessage = document.querySelector('#browse-message');
@@ -429,7 +414,7 @@ const browse = new LunarBrowse(renderer, geo => {
   document.querySelector('#pick-lon').value = geo.lon.toFixed(6);
   const covered = coveredLatitude(geo.lat);
   driveButton.disabled = switching || !covered;
-  if (covered) scheduleLandingPrefetch(geo);
+  // Selection is browse-only. Driving DEM is loaded by switchSite after explicit entry.
   browseMessage.textContent = covered
     ? t('browse.selected')
     : t('browse.invalid');
@@ -737,10 +722,9 @@ runWhenIdle(() => {
     .catch(err => console.error('[USGS / IAU Gazetteer]', err));
 }, 900);
 
-// First-paint priority: Browse UI/overview render first. The default landing
-// DEM, rover GLB, real star catalog, and Earth textures warm up only after the
-// browser gets an opportunity to paint/interact. Drive Mode can still force
-// rover loading immediately via ensureRoverLoaded().
+// Browse terrain stays at overview LODs; selecting a location does not warm driving DEM.
+// Rover/sky visuals may warm during idle time; switchSite loads driving terrain
+// only when the user explicitly enters Drive Mode.
 runWhenIdle(() => ensureRoverLoaded().catch(err => console.error('[Rover load]', err)), 600);
 runWhenIdle(() => ensureCelestialVisuals(), 1800);
 

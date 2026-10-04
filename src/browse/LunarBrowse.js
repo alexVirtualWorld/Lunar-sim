@@ -137,6 +137,14 @@ export class LunarBrowse {
     this.demStatus = t('browse.loading');
     this.currentLod = -1;
     this.pendingLod = null;
+    this.lastBrowseInteraction = performance.now();
+    this.browseInteracting = false;
+    this.controls.addEventListener('start', () => { this.browseInteracting = true; });
+    this.controls.addEventListener('end', () => {
+      this.browseInteracting = false;
+      this.lastBrowseInteraction = performance.now();
+    });
+    this.controls.addEventListener('change', () => { this.lastBrowseInteraction = performance.now(); });
     this.textureLoading = this.loadAlbedo();
     this.marker = new THREE.Mesh(new THREE.SphereGeometry(1.1, 12, 8), new THREE.MeshBasicMaterial({ color: 0x7fffd4, depthTest: false }));
     this.marker.visible = false;
@@ -725,6 +733,16 @@ export class LunarBrowse {
     this.onStatus(ready ? t('browse.ready') : t('browse.loading'), ready);
   }
 
+  async waitForAlbedoUpgrade(width) {
+    const maxDistance = width >= 8192 ? 180 : 270;
+    while (!this.active || this.busy || this.browseInteracting ||
+      this.currentLod < 0 || this.pendingLod !== null ||
+      this.camera.position.length() >= maxDistance ||
+      performance.now() - this.lastBrowseInteraction < 2500) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+  }
+
   async loadAlbedo() {
     const loader = new THREE.TextureLoader();
     const max = this.renderer.capabilities.maxTextureSize;
@@ -733,21 +751,12 @@ export class LunarBrowse {
     for (let i = 0; i < widths.length; i++) {
       const width = widths[i];
 
-      // First paint gets the compact 2K globe. Higher-resolution 4K/8K
-      // upgrades wait for an idle slice so image decode/upload does not
-      // compete with first interaction, rover preload, or DEM warmup.
-      if (i > 0) {
-        await new Promise(resolve => {
-          if (typeof globalThis.requestIdleCallback === 'function') {
-            globalThis.requestIdleCallback(() => resolve(), { timeout: 1200 });
-          } else {
-            setTimeout(resolve, 250);
-          }
-        });
-      }
-
+      // Upgrade only when zoom needs it and Browse has been quiet for 2.5 s.
+      // A global view stays at 2K; 4K/8K no longer upload during startup.
+      if (i > 0) await this.waitForAlbedoUpgrade(width);
       try {
         const texture = await loader.loadAsync(`/moon/albedo/browse-${width}.webp`);
+        if (i > 0) await this.waitForAlbedoUpgrade(width);
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.wrapS = THREE.RepeatWrapping;
         texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
