@@ -362,34 +362,11 @@ ui.routeClear?.addEventListener('click', () => {
 setHeadlights(rover.headlightsOn);
 updateExplorationUI();
 
-function capturePhoto() {
-  try {
-    if (mode === 'browse') browse.render(renderer);
-    else renderer.render(scene, camera);
-    const url = renderer.domElement.toDataURL('image/png');
-    const geo = driveReady ? terrain.geoAt(rover.east, rover.north) : browse.selected;
-    const coord = geo ? `${geo.lat.toFixed(4)}_${geo.lon.toFixed(4)}` : 'moon';
-    const stamp = celestial.date.toISOString().replace(/[:.]/g, '-');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `lunar_${coord}_${stamp}.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    if (ui.photoStatus) {
-      ui.photoStatus.textContent = t('photo.saved');
-      setTimeout(() => { if (ui.photoStatus) ui.photoStatus.textContent = ''; }, 1200);
-    }
-  } catch (err) {
-    console.error('[Photo]', err);
-    if (ui.photoStatus) ui.photoStatus.textContent = t('photo.failed');
-  }
-}
-
-ui.photoButton?.addEventListener('click', capturePhoto);
 
 let multiplayer = null;
 let miniMap = null;
+let photoMode = null;
+let photoModePromise = null;
 
 let activeSite = null;
 let switching = false;
@@ -504,6 +481,7 @@ function refreshLocalizedUI() {
   if (!switching) browseMessage.textContent = browse.selected ? t('browse.selected') : '';
   else browseMessage.textContent = t('browse.loadingLanding');
   browse.status();
+  photoMode?.refreshLanguage();
 }
 
 ui.languageSelect?.addEventListener('change', e => {
@@ -526,6 +504,7 @@ addEventListener('keydown', e => {
 applyDebugHudState();
 function setMode(next) {
   if (next === 'drive' && !driveReady) return;
+  if (photoMode?.active) photoMode.exit();
   mode = next;
   rover.keys.clear();
   rover.speed = 0;
@@ -680,7 +659,7 @@ addEventListener('keydown', e => {
 
   if (e.code === 'KeyP') {
     e.preventDefault();
-    capturePhoto();
+    if (mode === 'drive' && driveReady) togglePhotoMode();
     return;
   }
 
@@ -737,15 +716,53 @@ miniMap = new RoverMiniMap({
   root: document.querySelector('#minimap')
 });
 
+function ensurePhotoMode() {
+  if (photoMode) return Promise.resolve(photoMode);
+  if (!photoModePromise) {
+    photoModePromise = import('./photo/PhotoMode.js').then(({ PhotoMode }) => {
+      photoMode = new PhotoMode({
+        scene, camera, renderer, rover,
+        panel: document.querySelector('#photo-mode'),
+        getGeo: () => driveReady ? terrain.geoAt(rover.east, rover.north) : null,
+        getDate: () => celestial.date,
+        setDate: date => setCelestialDate(date),
+        isNetworked: () => Boolean(multiplayer?.socket?.connected),
+        onActiveChange: active => {
+          rover.keys.clear();
+          rover.inputEnabled = mode === 'drive' && !switching && !active;
+          roverCamera.enabled = mode === 'drive' && !switching && !active;
+          roverCamera.drag = false;
+          if (!active && mode === 'drive') roverCamera.snap();
+        }
+      });
+      photoMode.refreshLanguage();
+      return photoMode;
+    }).catch(error => {
+      photoModePromise = null;
+      console.error('[PhotoMode load]', error);
+      throw error;
+    });
+  }
+  return photoModePromise;
+}
+
+async function togglePhotoMode() {
+  if (mode !== 'drive' || !driveReady || switching) return;
+  const instance = await ensurePhotoMode();
+  if (mode === 'drive' && driveReady && !switching) instance.toggle();
+}
+ui.photoButton?.addEventListener('click', togglePhotoMode);
+
 let lastDebugUpdate = 0;
 const clock = new THREE.Clock();
 function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(0.033, clock.getDelta());
+  const simDt = photoMode?.active ? photoMode.simulationDelta(dt) : dt;
 
   if (mode === 'drive' && !switching && driveReady && terrain.manifest) {
     terrain.update(rover.east, rover.north);
-    rover.update(dt);
+    if (simDt > 0) rover.update(simDt);
     const oldOriginEast = floatingOrigin.east;
     const oldOriginNorth = floatingOrigin.north;
     const shifted = floatingOrigin.update(rover.east, rover.north);
@@ -753,17 +770,17 @@ function loop() {
       const deltaEast = floatingOrigin.east - oldOriginEast;
       const deltaNorth = floatingOrigin.north - oldOriginNorth;
       terrain.update(rover.east, rover.north);
-      rover.updateTransform(dt, true);
+      rover.updateTransform(simDt, true);
       roverCamera.rebase(deltaEast, deltaNorth);
     }
-    roverCamera.update(dt);
+    if (!photoMode?.active) roverCamera.update(dt);
     multiplayer.update(dt);
     miniMap.update();
 
     const geo = terrain.geoAt(rover.east, rover.north);
     if (geo) {
       ui.siteCoords.textContent = formatLatLon(geo.lat, geo.lon);
-      const sky = celestial.update(dt, { lat: geo.lat, lon: geo.lon, elevation: rover.elevation, targetPosition: rover.object.position });
+      const sky = celestial.update(simDt, { lat: geo.lat, lon: geo.lon, elevation: rover.elevation, targetPosition: rover.object.position });
       if (sky) {
         const s = sky.sun, e = sky.earth;
         if (ui.celestialStatus) {
@@ -778,7 +795,7 @@ function loop() {
         earthshine.target.updateMatrixWorld();
       }
       if (celestial.playing) syncCelestialTimeInput();
-      exploration.update(geo);
+      if (simDt > 0) exploration.update(geo);
       updateExplorationUI();
     }
     ui.altitude.textContent = t('hud.elev', { value: Math.round(rover.elevation) });
@@ -792,7 +809,10 @@ function loop() {
 
   if (debugEnabled && performance.now() - lastDebugUpdate > 250) { updateDebugHud(); lastDebugUpdate = performance.now(); }
 
-  if (mode === 'browse') browse.render(renderer);
+  if (photoMode?.active) {
+    photoMode.update(dt);
+    photoMode.render(dt);
+  } else if (mode === 'browse') browse.render(renderer);
   else renderer.render(scene, camera);
 }
 loop();
@@ -802,4 +822,5 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  photoMode?.resize(innerWidth, innerHeight);
 });

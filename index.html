@@ -46,6 +46,10 @@
 
     #global-tools{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:12;display:flex;gap:6px;align-items:center;pointer-events:auto}#language-control{display:flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid rgba(151,190,203,.35);border-radius:7px;background:rgba(5,12,17,.72);font-size:10px;color:#cfe5df}#language-select{background:#0c171d;color:#eafff7;border:1px solid #55777e;border-radius:5px;padding:4px 6px}#debug-toggle{padding:6px 9px;font-size:10px;border-radius:7px}
     #debug-hud{position:fixed;left:18px;bottom:58px;max-height:calc(100vh - 125px);overflow:auto;z-index:25;width:330px;max-width:calc(100vw - 36px);padding:10px;border:1px solid rgba(151,190,203,.45);border-radius:10px;background:rgba(4,11,16,.92);backdrop-filter:blur(10px);box-shadow:0 10px 35px #0009;color:#dfeef2;font:10px/1.45 Consolas,'SFMono-Regular',monospace;text-shadow:none;pointer-events:auto}.debug-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;letter-spacing:.1em;margin-bottom:7px}.debug-head button{padding:1px 7px;background:transparent;border:0;font-size:18px}.debug-check{display:flex;align-items:center;gap:5px;margin-bottom:8px}.debug-check input{width:auto}.debug-grid{display:grid;grid-template-columns:auto 1fr;gap:3px 9px}.debug-grid span{color:#91a9b1}.debug-grid b{font-weight:500;color:#cffff0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.debug-status{margin-top:6px;padding-top:5px;border-top:1px solid rgba(151,190,203,.16);color:#a8bdc6}
+
+    #photo-mode{position:fixed;right:18px;top:18px;z-index:40;width:340px;max-width:calc(100vw - 36px);max-height:calc(100vh - 36px);overflow:auto;box-sizing:border-box;padding:12px;border:1px solid rgba(159,255,214,.48);border-radius:12px;background:rgba(4,12,17,.94);box-shadow:0 14px 50px #000b;color:#eafff7;font:11px/1.35 Inter,system-ui,sans-serif;text-shadow:none;pointer-events:auto}
+    .photo-head{display:flex;align-items:center;gap:7px;margin-bottom:10px}.photo-title{flex:1;font-size:13px;font-weight:800;letter-spacing:.12em}.photo-head button{padding:4px 8px}.photo-close{font-size:18px;line-height:1}
+    .photo-section{margin-top:9px;padding-top:9px;border-top:1px solid rgba(151,190,203,.2)}.photo-section-title{margin-bottom:6px;color:#9fffd6;font-weight:800;letter-spacing:.08em}.photo-row{display:flex;align-items:center;gap:6px;margin-top:6px}.photo-row>label{min-width:76px;color:#bad0d1}.photo-row input[type=range]{min-width:0;flex:1;accent-color:#7dffda}.photo-row input[type=datetime-local],.photo-row input[type=text],.photo-row input[type=number],.photo-row select{min-width:0;flex:1;box-sizing:border-box;padding:5px;background:#0c171d;color:#eafff7;border:1px solid #55777e;border-radius:5px}.photo-actions{display:flex;gap:6px;flex-wrap:wrap}.photo-actions button{flex:1;padding:7px 8px;font-size:10px}.photo-check{display:flex;align-items:center;gap:5px}.photo-check input{width:auto}.photo-note{margin-top:7px;color:#91a9b1;font-size:10px}.photo-status{min-height:15px;color:#9fffd6}.photo-save{width:100%;margin-top:9px;font-weight:800}.photo-clean-view #hud,.photo-clean-view #global-tools,.photo-clean-view #debug-hud,.photo-clean-view #browse-toggle{display:none!important}
     @media(max-width:700px){#browse-panel{top:auto;bottom:12px;max-height:42vh}#browse-toggle{top:12px;right:12px}#gravity-control{top:58px;right:10px;width:166px;padding:7px}#celestial-control{top:174px;right:10px;width:166px;padding:7px}#exploration-control{top:345px;right:10px;width:166px;padding:7px}#minimap{top:530px;right:10px;width:166px;padding:7px}#minimap-canvas{width:166px;height:132px}#minimap-telemetry{display:none}}
     .warn{color:#ffd7a0}.ok{color:#dfffd9}
   </style>
@@ -127,7 +131,7 @@
     <div class="celestial-head"><span data-i18n="celestial.title">CELESTIAL TIME · UTC</span><button id="photo-button" class="photo-btn" type="button" data-i18n="celestial.photo">PHOTO · P</button></div>
     <input id="celestial-time" class="celestial-time" type="datetime-local" step="1">
     <div class="celestial-row"><button id="time-prev-day" type="button">−1D</button><button id="time-now" type="button" data-i18n="celestial.now">NOW</button><button id="time-next-day" type="button">+1D</button><button id="time-play" type="button" data-i18n="celestial.play">PLAY</button></div>
-    <div class="celestial-row"><span data-i18n="celestial.rate">RATE</span><select id="time-rate"><option value="1">1×</option><option value="60">60×</option><option value="3600" selected>3600×</option><option value="86400" data-i18n="celestial.dayRate">1 day/s</option></select><span id="photo-status"></span></div>
+    <div class="celestial-row"><span data-i18n="celestial.rate">RATE</span><select id="time-rate"><option value="1">1×</option><option value="60">60×</option><option value="3600" selected>3600×</option><option value="86400" data-i18n="celestial.dayRate">1 day/s</option></select><span id="photo-quick-status"></span></div>
     <div id="celestial-status" class="celestial-status">SUN -- · EARTH --</div>
   </section>
 
@@ -151,6 +155,49 @@
   <div class="reticle"></div>
   <div class="help" data-i18n="hud.controls">L · C · W/S · A/D · Shift · R · B</div>
 </div>
+
+
+<section id="photo-mode" hidden aria-label="Photo mode">
+  <div class="photo-head"><span class="photo-title" data-i18n="photo.title">PHOTO MODE</span><button id="photo-close" class="photo-close" type="button" aria-label="Close">×</button></div>
+  <div class="photo-actions"><button id="photo-lock" type="button"></button><button id="photo-reset" type="button" data-i18n="photo.reset">RESET CAMERA</button></div>
+  <div class="photo-row"><label class="photo-check"><input id="photo-hide-hud" type="checkbox" checked> <span data-i18n="photo.hideHud">HIDE HUD</span></label></div>
+  <div class="photo-section"><div class="photo-section-title" data-i18n="photo.camera">CAMERA</div>
+    <div class="photo-row"><label data-i18n="photo.fov">FOV</label><input id="photo-fov" type="range" min="18" max="100" step="1" value="50"></div>
+    <div class="photo-row"><label data-i18n="photo.roll">ROLL</label><input id="photo-roll" type="range" min="-30" max="30" step="1" value="0"></div>
+    <div class="photo-row"><label data-i18n="photo.speed">MOVE SPEED</label><input id="photo-speed" type="range" min="1" max="100" step="1" value="12"></div>
+    <div id="photo-camera-status" class="photo-note" role="status"></div>
+    <div id="photo-camera-help" class="photo-note"></div>
+  </div>
+  <div class="photo-section"><div class="photo-section-title" data-i18n="photo.time">TIME</div>
+    <div class="photo-row"><input id="photo-scene-time" type="datetime-local" step="1"><button id="photo-time-now" type="button" data-i18n="celestial.now">NOW</button></div>
+    <div class="photo-row"><select id="photo-sim-rate"><option value="0">0×</option><option value="0.05">0.05×</option><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1">1×</option></select><button id="photo-pause" type="button"></button><button id="photo-step" type="button" data-i18n="photo.step">STEP</button></div>
+    <div id="photo-network-status" class="photo-note"></div>
+    <div id="photo-sim-status" class="photo-note" role="status"></div>
+    <div class="photo-note" data-i18n="photo.shortcuts">Space Pause/Resume · → Step · H Hide HUD · Esc Exit</div>
+  </div>
+  <div class="photo-section"><div class="photo-section-title" data-i18n="photo.depth">DEPTH OF FIELD</div>
+    <div class="photo-row"><label class="photo-check"><input id="photo-dof" type="checkbox"> <span data-i18n="photo.enableDof">ENABLE</span></label><button id="photo-focus-rover" type="button" data-i18n="photo.focusRover">FOCUS ROVER</button></div>
+    <div class="photo-row"><label data-i18n="photo.focus">FOCUS</label><input id="photo-focus" type="number" min="0.5" max="5000" step="0.5" value="12"></div>
+    <div class="photo-row"><label data-i18n="photo.aperture">APERTURE</label><input id="photo-aperture" type="range" min="0" max="100" value="25"></div>
+    <div class="photo-row"><label data-i18n="photo.blur">BLUR</label><input id="photo-blur" type="range" min="0" max="100" value="35"></div>
+    <div class="photo-note" data-i18n="photo.focusHelp">Double-click the scene to set focus distance.</div>
+  </div>
+  <div class="photo-section"><div class="photo-section-title" data-i18n="photo.look">LOOK</div>
+    <div class="photo-row"><label data-i18n="photo.preset">PRESET</label><select id="photo-preset"><option value="raw" data-i18n="photo.raw">RAW</option><option value="cinema" data-i18n="photo.cinema">CINEMA</option><option value="warm" data-i18n="photo.warm">WARM</option><option value="mono" data-i18n="photo.mono">MONO</option></select></div>
+    <div class="photo-row"><label data-i18n="photo.exposure">EXPOSURE</label><input id="photo-exposure" type="range" min="-2" max="2" step="0.05" value="0"></div>
+    <div class="photo-row"><label data-i18n="photo.contrast">CONTRAST</label><input id="photo-contrast" type="range" min="50" max="160" value="100"></div>
+    <div class="photo-row"><label data-i18n="photo.saturation">SATURATION</label><input id="photo-saturation" type="range" min="0" max="180" value="100"></div>
+    <div class="photo-row"><label data-i18n="photo.temperature">TEMPERATURE</label><input id="photo-temperature" type="range" min="-100" max="100" value="0"></div>
+    <div class="photo-row"><label data-i18n="photo.vignette">VIGNETTE</label><input id="photo-vignette" type="range" min="0" max="100" value="0"></div>
+    <div class="photo-row"><label data-i18n="photo.grain">GRAIN</label><input id="photo-grain" type="range" min="0" max="100" value="0"></div>
+  </div>
+  <div class="photo-section"><div class="photo-section-title" data-i18n="photo.export">STICKER · EXPORT</div>
+    <div class="photo-row"><label data-i18n="photo.sticker">STICKER</label><select id="photo-sticker"><option value="none" data-i18n="photo.none">NONE</option><option value="mission" data-i18n="photo.mission">MISSION</option><option value="coords" data-i18n="photo.coords">COORDINATES</option></select></div>
+    <div class="photo-row"><label data-i18n="photo.caption">CAPTION</label><input id="photo-caption" type="text" maxlength="48"></div>
+    <div class="photo-row"><label data-i18n="photo.resolution">RESOLUTION</label><select id="photo-resolution"><option value="1">1×</option><option value="2">2×</option><option value="4k">4K</option></select></div>
+    <button id="photo-save" class="photo-save" type="button" data-i18n="photo.save">SAVE PNG</button><div id="photo-status" class="photo-status" role="status"></div>
+  </div>
+</section>
 
 <section id="debug-hud" hidden aria-label="Debug HUD">
   <div class="debug-head"><span data-i18n="debug.title">DEBUG HUD</span><button id="debug-close" type="button">×</button></div>

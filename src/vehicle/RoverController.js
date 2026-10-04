@@ -267,10 +267,12 @@ export class RoverController {
   }
 
   update(dt) {
-    if (!this.ready || !this.inputEnabled) return;
-    const throttle = (this.keys.has('KeyW') ? 1 : 0) - (this.keys.has('KeyS') ? 1 : 0);
-    const steerInput = (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0);
-    const handbrake = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
+    if (!this.ready) return;
+    // Photo Mode disables new driving input while physics must keep advancing.
+    const acceptInput = this.inputEnabled;
+    const throttle = acceptInput ? (this.keys.has('KeyW') ? 1 : 0) - (this.keys.has('KeyS') ? 1 : 0) : 0;
+    const steerInput = acceptInput ? (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0) : 0;
+    const handbrake = acceptInput && (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'));
 
     if (this.grounded) {
       if (throttle !== 0) this.speed += throttle * (throttle > 0 ? this.config.accel : this.config.brake) * dt;

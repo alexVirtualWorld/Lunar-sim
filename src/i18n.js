@@ -87,6 +87,67 @@ const DICT = {
   }
 };
 
+
+const PHOTO_DICT = {
+  en: {'photo.title':'PHOTO MODE','photo.reset':'RESET CAMERA','photo.hideHud':'HIDE HUD','photo.camera':'CAMERA','photo.fov':'FOV','photo.roll':'ROLL','photo.speed':'MOVE SPEED','photo.cameraHelp':'Drag to orbit/look · Wheel zoom/speed · WASD move · Q/E height · Shift boost','photo.time':'TIME','photo.step':'STEP','photo.pause':'PAUSE','photo.resume':'RESUME','photo.networkLive':'Online world stays live; pause and slow motion are disabled.','photo.offlinePause':'Offline: pause, slow motion and frame step are available.','photo.lock':'LOCK ROVER','photo.unlock':'FREE CAMERA','photo.depth':'DEPTH OF FIELD','photo.enableDof':'ENABLE','photo.focusRover':'FOCUS ROVER','photo.focus':'FOCUS','photo.aperture':'APERTURE','photo.blur':'BLUR','photo.focusHelp':'Double-click the scene to set focus distance.','photo.look':'LOOK','photo.preset':'PRESET','photo.raw':'RAW','photo.cinema':'CINEMA','photo.warm':'WARM','photo.mono':'MONO','photo.exposure':'EXPOSURE','photo.contrast':'CONTRAST','photo.saturation':'SATURATION','photo.temperature':'TEMPERATURE','photo.vignette':'VIGNETTE','photo.grain':'GRAIN','photo.export':'STICKER · EXPORT','photo.sticker':'STICKER','photo.none':'NONE','photo.mission':'MISSION','photo.coords':'COORDINATES','photo.caption':'CAPTION','photo.resolution':'RESOLUTION','photo.save':'SAVE PNG','photo.saving':'SAVING…'},
+  'zh-CN': {'photo.title':'拍照模式','photo.reset':'重置相机','photo.hideHud':'隐藏 HUD','photo.camera':'相机','photo.fov':'视野','photo.roll':'倾斜','photo.speed':'移动速度','photo.cameraHelp':'拖动环绕/观察 · 滚轮缩放/调速 · WASD 移动 · Q/E 升降 · Shift 加速','photo.time':'时间','photo.step':'逐帧','photo.pause':'暂停','photo.resume':'继续','photo.networkLive':'联网世界保持实时运行；暂停和慢动作不可用。','photo.offlinePause':'离线模式可使用暂停、慢动作和逐帧。','photo.lock':'锁定越野车','photo.unlock':'自由相机','photo.depth':'景深','photo.enableDof':'启用','photo.focusRover':'对焦越野车','photo.focus':'焦点距离','photo.aperture':'光圈','photo.blur':'虚化','photo.focusHelp':'双击场景可设置焦点距离。','photo.look':'画面','photo.preset':'预设','photo.raw':'原始','photo.cinema':'电影','photo.warm':'暖色','photo.mono':'黑白','photo.exposure':'曝光','photo.contrast':'对比度','photo.saturation':'饱和度','photo.temperature':'色温','photo.vignette':'暗角','photo.grain':'颗粒','photo.export':'贴纸与导出','photo.sticker':'贴纸','photo.none':'无','photo.mission':'任务标识','photo.coords':'坐标','photo.caption':'文字','photo.resolution':'分辨率','photo.save':'保存 PNG','photo.saving':'正在保存…'},
+  ja: {'photo.title':'フォトモード','photo.reset':'カメラをリセット','photo.hideHud':'HUDを隠す','photo.camera':'カメラ','photo.fov':'画角','photo.roll':'傾き','photo.speed':'移動速度','photo.cameraHelp':'ドラッグ：回転/視点 · ホイール：ズーム/速度 · WASD：移動 · Q/E：上下','photo.time':'時間','photo.step':'コマ送り','photo.pause':'一時停止','photo.resume':'再開','photo.networkLive':'オンライン世界は進行します。一時停止とスローは使用できません。','photo.offlinePause':'オフラインでは一時停止、スロー、コマ送りを使用できます。','photo.lock':'ローバー固定','photo.unlock':'フリーカメラ','photo.depth':'被写界深度','photo.enableDof':'有効','photo.focusRover':'ローバーに合焦','photo.focus':'焦点距離','photo.aperture':'絞り','photo.blur':'ぼかし','photo.focusHelp':'シーンをダブルクリックして焦点を設定します。','photo.look':'画面効果','photo.preset':'プリセット','photo.raw':'標準','photo.cinema':'シネマ','photo.warm':'暖色','photo.mono':'モノクロ','photo.exposure':'露出','photo.contrast':'コントラスト','photo.saturation':'彩度','photo.temperature':'色温度','photo.vignette':'ビネット','photo.grain':'粒子','photo.export':'ステッカー・書き出し','photo.sticker':'ステッカー','photo.none':'なし','photo.mission':'ミッション','photo.coords':'座標','photo.caption':'文字','photo.resolution':'解像度','photo.save':'PNGを保存','photo.saving':'保存中…'},
+  ko: {'photo.title':'사진 모드','photo.reset':'카메라 초기화','photo.hideHud':'HUD 숨기기','photo.camera':'카메라','photo.fov':'시야각','photo.roll':'기울기','photo.speed':'이동 속도','photo.cameraHelp':'드래그: 회전/시점 · 휠: 줌/속도 · WASD: 이동 · Q/E: 높이','photo.time':'시간','photo.step':'한 프레임','photo.pause':'일시정지','photo.resume':'계속','photo.networkLive':'온라인 세계는 계속 진행됩니다. 일시정지와 슬로 모션은 사용할 수 없습니다.','photo.offlinePause':'오프라인에서는 일시정지, 슬로 모션, 프레임 이동을 사용할 수 있습니다.','photo.lock':'로버 고정','photo.unlock':'자유 카메라','photo.depth':'피사계 심도','photo.enableDof':'사용','photo.focusRover':'로버 초점','photo.focus':'초점 거리','photo.aperture':'조리개','photo.blur':'흐림','photo.focusHelp':'장면을 두 번 클릭해 초점을 설정합니다.','photo.look':'화면 효과','photo.preset':'프리셋','photo.raw':'원본','photo.cinema':'시네마','photo.warm':'따뜻함','photo.mono':'흑백','photo.exposure':'노출','photo.contrast':'대비','photo.saturation':'채도','photo.temperature':'색온도','photo.vignette':'비네트','photo.grain':'입자','photo.export':'스티커 · 내보내기','photo.sticker':'스티커','photo.none':'없음','photo.mission':'미션','photo.coords':'좌표','photo.caption':'문구','photo.resolution':'해상도','photo.save':'PNG 저장','photo.saving':'저장 중…'}
+};
+for (const [language, entries] of Object.entries(PHOTO_DICT)) Object.assign(DICT[language], entries);
+
+const PHOTO_TIME_STATUS = {
+  en: {'photo.timePaused':'SIMULATION PAUSED','photo.timeRunning':'SIMULATION · {rate}×','photo.frameAdvanced':'FRAME +1 · PAUSED'},
+  'zh-CN': {'photo.timePaused':'模拟已暂停','photo.timeRunning':'模拟速度 · {rate}×','photo.frameAdvanced':'已推进一帧 · 暂停'},
+  ja: {'photo.timePaused':'シミュレーション一時停止','photo.timeRunning':'シミュレーション · {rate}×','photo.frameAdvanced':'1フレーム進行 · 一時停止'},
+  ko: {'photo.timePaused':'시뮬레이션 일시정지','photo.timeRunning':'시뮬레이션 · {rate}×','photo.frameAdvanced':'한 프레임 이동 · 일시정지'}
+};
+for (const [language, entries] of Object.entries(PHOTO_TIME_STATUS)) Object.assign(DICT[language], entries);
+
+const PHOTO_SHORTCUT_DICT = {
+  en: {'photo.title':'PHOTO MODE · P','photo.shortcuts':'Space Pause/Resume · → Step · H Hide HUD · Esc Exit'},
+  'zh-CN': {'photo.title':'拍照模式 · P','photo.shortcuts':'Space 暂停/继续 · → 推进一帧 · H 隐藏 HUD · Esc 退出'},
+  ja: {'photo.title':'フォトモード · P','photo.shortcuts':'Space 一時停止/再開 · → コマ送り · H HUD表示切替 · Esc 終了'},
+  ko: {'photo.title':'사진 모드 · P','photo.shortcuts':'Space 일시정지/계속 · → 한 프레임 · H HUD 전환 · Esc 종료'}
+};
+for (const [language, entries] of Object.entries(PHOTO_SHORTCUT_DICT)) Object.assign(DICT[language], entries);
+
+const PHOTO_CAMERA_MODE_DICT = {
+  en: {
+    'photo.cameraModeLocked':'CAMERA MODE · ROVER LOCK',
+    'photo.cameraModeFree':'CAMERA MODE · FREE',
+    'photo.switchFree':'SWITCH TO FREE CAMERA',
+    'photo.switchLock':'LOCK ROVER',
+    'photo.cameraHelpLocked':'Drag: orbit rover · Wheel: zoom',
+    'photo.cameraHelpFree':'Drag: look · Wheel: move speed · WASD: move · Q/E: height · Shift: boost'
+  },
+  'zh-CN': {
+    'photo.cameraModeLocked':'相机模式 · 锁定越野车',
+    'photo.cameraModeFree':'相机模式 · 自由相机',
+    'photo.switchFree':'切换到自由相机',
+    'photo.switchLock':'锁定越野车',
+    'photo.cameraHelpLocked':'拖动：环绕越野车 · 滚轮：缩放',
+    'photo.cameraHelpFree':'拖动：转动视角 · 滚轮：调整移动速度 · WASD：移动 · Q/E：升降 · Shift：加速'
+  },
+  ja: {
+    'photo.cameraModeLocked':'カメラモード · ローバー固定',
+    'photo.cameraModeFree':'カメラモード · フリー',
+    'photo.switchFree':'フリーカメラへ',
+    'photo.switchLock':'ローバーを固定',
+    'photo.cameraHelpLocked':'ドラッグ：ローバー周回 · ホイール：ズーム',
+    'photo.cameraHelpFree':'ドラッグ：視点 · ホイール：移動速度 · WASD：移動 · Q/E：上下 · Shift：加速'
+  },
+  ko: {
+    'photo.cameraModeLocked':'카메라 모드 · 로버 고정',
+    'photo.cameraModeFree':'카메라 모드 · 자유 카메라',
+    'photo.switchFree':'자유 카메라로',
+    'photo.switchLock':'로버 고정',
+    'photo.cameraHelpLocked':'드래그: 로버 주회 · 휠: 줌',
+    'photo.cameraHelpFree':'드래그: 시점 · 휠: 이동 속도 · WASD: 이동 · Q/E: 높이 · Shift: 가속'
+  }
+};
+for (const [language, entries] of Object.entries(PHOTO_CAMERA_MODE_DICT)) Object.assign(DICT[language], entries);
+
 let currentLanguage = 'en';
 
 function normalizeLanguage(raw='') {
