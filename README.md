@@ -1,6 +1,6 @@
-# Lunar sim
+# Lunar Sim
 
-A browser-based lunar Lunar simulator built with **Three.js, Vite, and Socket.IO**.
+A browser-based lunar simulator built with **Three.js, Vite, and Socket.IO**.
 
 The project renders a real-scale Moon (`1 unit = 1 meter`) from lunar DEM data, supports global latitude/longitude driving with a floating origin, provides a Google-Earth-style lunar browser, reproduces the Sun/Earth/star sky by time, and adds exploration gameplay on top of official USGS/IAU lunar nomenclature.
 
@@ -22,6 +22,8 @@ The project renders a real-scale Moon (`1 unit = 1 meter`) from lunar DEM data, 
 - Deterministic local exploration POIs, area completion, and unlockable obelisks
 - Date/time-controlled Sun and Earth directions, Earth phase, NASA Earth textures/cloud layer, and a real bright-star catalog
 - Socket.IO multiplayer state synchronization
+- English, Simplified Chinese, Japanese, and Korean interface with a persisted language preference
+- Optional Debug HUD for terrain-provider, block, LOD, cache, floating-origin, and rover diagnostics
 
 ## Important: terrain data is not stored in Git
 
@@ -184,6 +186,7 @@ npm run build
 | B | Open Browse Mode |
 | P | Take photo |
 | R | Reload/reset the current landing site |
+| F10 | Toggle the Debug HUD |
 
 The UI also provides configurable gravity from 0 to 274.8 m/s², with presets for the Moon, planets, and the Sun.
 
@@ -194,10 +197,11 @@ The UI also provides configurable gravity from 0 to 274.8 m/s², with presets fo
 - Click a displayed official place name/point for USGS/IAU information
 - Start driving from the selected coordinate
 - Toggle map layers:
-  - longitude/latitude grid and ±60° coverage reference
+  - longitude/latitude grid
   - place names / points
   - exploration status filter
   - recorded route
+- Enable the Debug HUD to show the ±60° SLDEM/LOLA provider boundaries
 
 Place filters:
 
@@ -313,6 +317,8 @@ node tools/lunar-data/test_polar_terrain_manager.mjs
 node tools/lunar-data/test_polar_seam_v2.mjs
 node tools/lunar-data/test_lod_edge_morph.mjs
 node tools/lunar-data/test_exploration_system.mjs
+node tools/lunar-data/test_browse_layers_filters.mjs
+node tools/lunar-data/test_open_source_ui_i18n.mjs
 ```
 
 Some terrain tests require the corresponding generated DEM data to exist.

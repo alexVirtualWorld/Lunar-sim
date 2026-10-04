@@ -30,7 +30,7 @@ if(!featureMatchesExplorationFilter(ordinary,'all',ex)) throw new Error('ALL sho
 
 const html=await fs.readFile('index.html','utf8');
 if((html.match(/id="route-visible"/g)||[]).length!==1) throw new Error('route-visible must exist exactly once');
-for(const token of ['MAP LAYERS','map-places-filter','IN PROGRESS','GRID / ±60°']) if(!html.includes(token)) throw new Error('missing MAP LAYERS token '+token);
+for(const token of ['MAP LAYERS','map-places-filter','IN PROGRESS','data-i18n="map.grid">GRID']) if(!html.includes(token)) throw new Error('missing MAP LAYERS token '+token);
 
 const browseSource=await fs.readFile('src/browse/LunarBrowse.js','utf8');
 const start=browseSource.indexOf('  updatePlaceLabels(force = false) {');

@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GlobalHeightTileLoader } from '../terrain/GlobalHeightTileLoader.js';
 import { MOON_RADIUS_M, SITES } from '../config.js';
 import { normalizeLon360 } from '../geo/LunarCoordinates.js';
+import { t } from '../i18n.js';
 
 // Browse coordinates are independent of the driving scene's floating origin.
 const RADIUS = 100;
@@ -118,15 +119,22 @@ export class LunarBrowse {
     this.grid = new THREE.Group();
     this.grid.visible = false;
     this.scene.add(this.grid);
+    this.providerBoundaries = new THREE.Group();
+    this.providerBoundaries.visible = false;
+    this.scene.add(this.providerBoundaries);
     for (let lat = -60; lat <= 60; lat += 30) {
-      this.line(Array.from({ length: 721 }, (_, i) => globePoint(lat, i / 2, 100.8)), Math.abs(lat) === 60 ? 0xffb45c : 0x718999);
+      if (Math.abs(lat) === 60) continue;
+      this.line(Array.from({ length: 721 }, (_, i) => globePoint(lat, i / 2, 100.8)), 0x718999, this.grid);
     }
     for (let lon = 0; lon < 360; lon += 30) {
-      this.line(Array.from({ length: 361 }, (_, i) => globePoint(-90 + i / 2, lon, 100.8)), 0x718999);
+      this.line(Array.from({ length: 361 }, (_, i) => globePoint(-90 + i / 2, lon, 100.8)), 0x718999, this.grid);
+    }
+    for (const lat of [-60, 60]) {
+      this.line(Array.from({ length: 721 }, (_, i) => globePoint(lat, i / 2, 100.9)), 0xffb45c, this.providerBoundaries);
     }
     document.querySelector('#browse-grid')?.addEventListener('change', e => { this.grid.visible = e.target.checked; });
-    this.imageStatus = '影像加载中';
-    this.demStatus = 'DEM 加载中';
+    this.imageStatus = t('browse.loading');
+    this.demStatus = t('browse.loading');
     this.currentLod = -1;
     this.pendingLod = null;
     this.textureLoading = this.loadAlbedo();
@@ -170,7 +178,13 @@ export class LunarBrowse {
 
     this.roverHud = document.createElement('div');
     this.roverHud.className = 'browse-rover-label';
-    this.roverHud.innerHTML = '<div class="tag">CURRENT ROVER</div><div class="coords"></div><div class="telemetry"></div>';
+    this.roverHud.innerHTML = '<div class="tag"></div><div class="coords"></div><div class="telemetry"></div>';
+    this.roverHud.querySelector('.tag').textContent = t('rover.current');
+    window.addEventListener('lunar-language-changed', () => {
+      this.roverHud.querySelector('.tag').textContent = t('rover.current');
+      this.hideFeaturePopup();
+      this.status();
+    });
     this.roverHud.hidden = true;
     document.body.appendChild(this.roverHud);
 
@@ -255,8 +269,12 @@ export class LunarBrowse {
     this.focus({ lat: 15, lon: 0 });
   }
 
-  line(points, color) {
-    this.grid.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.65 })));
+  line(points, color, group = this.grid) {
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.65 })));
+  }
+
+  setProviderBoundariesVisible(visible) {
+    this.providerBoundaries.visible = !!visible;
   }
 
   focus(geo) {
@@ -514,11 +532,11 @@ export class LunarBrowse {
     const body = document.createElement('div');
     body.className = 'feature-popup-body';
     const lines = [
-      `Feature Type: ${feature.type}`,
-      `Location: ${feature.lat.toFixed(2)}° ${feature.lat >= 0 ? 'N' : 'S'} / ${feature.lon.toFixed(2)}° E`,
-      `Size: ${Number(feature.diameterKm || 0).toFixed(2)} km`,
-      feature.approvalDate ? `Approved: ${feature.approvalDate.slice(0,4)}` : '',
-      feature.origin ? `Origin: ${feature.origin}` : ''
+      t('popup.featureType') + ': ' + feature.type,
+      t('popup.location') + ': ' + feature.lat.toFixed(2) + '° ' + (feature.lat >= 0 ? 'N' : 'S') + ' / ' + feature.lon.toFixed(2) + '° E',
+      t('popup.size') + ': ' + Number(feature.diameterKm || 0).toFixed(2) + ' km',
+      feature.approvalDate ? t('popup.approved') + ': ' + feature.approvalDate.slice(0,4) : '',
+      feature.origin ? t('popup.origin') + ': ' + feature.origin : ''
     ].filter(Boolean);
     for (const line of lines) {
       const div = document.createElement('div');
@@ -531,11 +549,11 @@ export class LunarBrowse {
       status.className = 'feature-exploration-status';
       if (progress.completed) {
         status.classList.add('completed');
-        status.textContent = 'EXPLORATION · COMPLETED · ' + progress.total + '/' + progress.total + ' POI · OBELISK UNLOCKED';
+        status.textContent = t('popup.exploration') + ' · ' + t('exploration.completed') + ' · ' + progress.total + '/' + progress.total + ' ' + t('exploration.poi') + ' · ' + t('exploration.obeliskUnlocked');
       } else if (progress.discovered > 0) {
-        status.textContent = 'EXPLORATION · IN PROGRESS · ' + progress.discovered + '/' + progress.total + ' POI';
+        status.textContent = t('popup.exploration') + ' · ' + t('exploration.inProgress') + ' · ' + progress.discovered + '/' + progress.total + ' ' + t('exploration.poi');
       } else {
-        status.textContent = 'EXPLORATION · NOT EXPLORED · 0/' + progress.total + ' POI';
+        status.textContent = t('popup.exploration') + ' · ' + t('exploration.notExplored') + ' · 0/' + progress.total + ' ' + t('exploration.poi');
       }
       body.appendChild(status);
     }
@@ -544,7 +562,7 @@ export class LunarBrowse {
     link.href = feature.url || `https://planetarynames.wr.usgs.gov/Feature/${feature.id}`;
     link.target = '_blank';
     link.rel = 'noopener';
-    link.textContent = 'USGS / IAU Gazetteer →';
+    link.textContent = t('popup.gazetteer');
     box.append(close, title, body, link);
     box.hidden = false;
     const w = 340, h = 210;
@@ -703,7 +721,8 @@ export class LunarBrowse {
   }
 
   status() {
-    this.onStatus(`${this.imageStatus} · ${this.demStatus} · 极区仅影像，无驾驶 DEM`);
+    const ready = this.currentLod >= 0 && !this.pendingLod;
+    this.onStatus(ready ? t('browse.ready') : t('browse.loading'), ready);
   }
 
   async loadAlbedo() {

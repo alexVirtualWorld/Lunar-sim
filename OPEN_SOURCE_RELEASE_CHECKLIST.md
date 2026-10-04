@@ -44,3 +44,38 @@ The tracked `public/moon/global/index.json` is a lightweight LOD4 starter index.
 - A clean max-LOD4 global index was generated.
 - `npm install` completed with 0 reported vulnerabilities at preparation time.
 - `npm run build` completed successfully.
+
+## 2026-10-04 UI synchronization
+
+The public repository copy was updated from the active Lunar Sim development project with:
+
+- the simplified Lunar Sim interface;
+- English, Simplified Chinese, Japanese, and Korean localization;
+- the optional Debug HUD and F10 shortcut;
+- the separate Debug-only SLDEM/LOLA provider-boundary overlay;
+- localized Browse/Drive, exploration, multiplayer, minimap, gravity, and celestial UI;
+- updated Browse filter and UI/i18n regression tests;
+- README controls and feature documentation for the new UI.
+
+Files synchronized:
+
+```text
+index.html
+src/main.js
+src/i18n.js
+src/browse/LunarBrowse.js
+src/ui/RoverMiniMap.js
+src/network/Multiplayer.js
+tools/lunar-data/test_browse_layers_filters.mjs
+tools/lunar-data/test_open_source_ui_i18n.mjs
+```
+
+Validation after synchronization:
+
+- JavaScript syntax checks passed.
+- Four-language translation coverage passed: 129 keys per language.
+- Browse filter, stable-label, exploration feedback, headlights, and camera recenter tests passed.
+- Vite production build passed with 57 modules.
+- Isolated Edge smoke test passed for all four language switches and the Debug HUD, with no uncaught JavaScript exceptions.
+- `npm ci` reported 0 vulnerabilities.
+- Generated lunar DEM directories remained untracked and were not copied.

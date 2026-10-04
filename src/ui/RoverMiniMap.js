@@ -1,4 +1,5 @@
 import { formatLatLon } from '../geo/LunarCoordinates.js';
+import { t } from '../i18n.js';
 
 const CARDINALS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const MAP_SPANS = [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
@@ -252,7 +253,7 @@ export class RoverMiniMap {
     const geo = this.terrain.geoAt(this.rover.east, this.rover.north);
     const heading = normalizeDegrees(this.rover.heading * 180 / Math.PI);
     this.coords.textContent = geo ? formatLatLon(geo.lat, geo.lon) : '--';
-    this.telemetry.textContent = `HDG ${String(Math.round(heading)).padStart(3, '0')}° ${cardinal(heading)} · ELEV ${Math.round(this.rover.elevation)} m · E ${Math.round(this.rover.east)} / N ${Math.round(this.rover.north)} m`;
-    this.scaleLabel.textContent = `视野 ${niceDistance(this.span)} · 北朝上`;
+    this.telemetry.textContent = t('hud.heading') + ' ' + String(Math.round(heading)).padStart(3, '0') + '° ' + cardinal(heading) + ' · ' + t('hud.elev', { value: Math.round(this.rover.elevation) });
+    this.scaleLabel.textContent = t('minimap.view', { value: niceDistance(this.span) });
   }
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>lunar sim</title>
+  <title>Lunar Sim</title>
   <style>
     html,body,#app{width:100%;height:100%;margin:0;overflow:hidden;background:#000;font-family:Inter,system-ui,sans-serif;color:#fff}
     canvas{display:block}
@@ -43,92 +43,136 @@
     .feature-exploration-status{margin-top:8px;padding:7px 8px;border-left:3px solid #d6b25f;background:#ebe8dc;font-weight:700}.feature-exploration-status.completed{border-left-color:#2fae88;background:#e0f1eb;color:#075943}
     #discovery-toast{position:fixed;left:50%;bottom:66px;z-index:30;transform:translate(-50%,18px);min-width:320px;max-width:min(560px,calc(100vw - 30px));padding:12px 18px;border:1px solid rgba(125,255,218,.65);border-left:4px solid #7dffda;border-radius:6px;background:linear-gradient(135deg,rgba(4,15,20,.95),rgba(7,29,35,.92));box-shadow:0 10px 34px #000a,0 0 24px rgba(80,255,210,.08);color:#effffb;text-align:center;font-family:Consolas,'SFMono-Regular',monospace;pointer-events:none;opacity:0;transition:opacity .22s ease,transform .22s ease}.discovery-toast-title{font-size:11px;font-weight:800;letter-spacing:.15em;color:#7dffda}.discovery-toast-main{margin-top:4px;font-size:17px;font-weight:800}.discovery-toast-sub{margin-top:3px;font-size:11px;color:#b9d8d1}#discovery-toast.show{opacity:1;transform:translate(-50%,0)}#discovery-toast.complete{border-color:#ffd47a;border-left-color:#ffd47a}#discovery-toast.complete .discovery-toast-title{color:#ffd47a}
 
+
+    #global-tools{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:12;display:flex;gap:6px;align-items:center;pointer-events:auto}#language-control{display:flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid rgba(151,190,203,.35);border-radius:7px;background:rgba(5,12,17,.72);font-size:10px;color:#cfe5df}#language-select{background:#0c171d;color:#eafff7;border:1px solid #55777e;border-radius:5px;padding:4px 6px}#debug-toggle{padding:6px 9px;font-size:10px;border-radius:7px}
+    #debug-hud{position:fixed;left:18px;bottom:58px;max-height:calc(100vh - 125px);overflow:auto;z-index:25;width:330px;max-width:calc(100vw - 36px);padding:10px;border:1px solid rgba(151,190,203,.45);border-radius:10px;background:rgba(4,11,16,.92);backdrop-filter:blur(10px);box-shadow:0 10px 35px #0009;color:#dfeef2;font:10px/1.45 Consolas,'SFMono-Regular',monospace;text-shadow:none;pointer-events:auto}.debug-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;letter-spacing:.1em;margin-bottom:7px}.debug-head button{padding:1px 7px;background:transparent;border:0;font-size:18px}.debug-check{display:flex;align-items:center;gap:5px;margin-bottom:8px}.debug-check input{width:auto}.debug-grid{display:grid;grid-template-columns:auto 1fr;gap:3px 9px}.debug-grid span{color:#91a9b1}.debug-grid b{font-weight:500;color:#cffff0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.debug-status{margin-top:6px;padding-top:5px;border-top:1px solid rgba(151,190,203,.16);color:#a8bdc6}
     @media(max-width:700px){#browse-panel{top:auto;bottom:12px;max-height:42vh}#browse-toggle{top:12px;right:12px}#gravity-control{top:58px;right:10px;width:166px;padding:7px}#celestial-control{top:174px;right:10px;width:166px;padding:7px}#exploration-control{top:345px;right:10px;width:166px;padding:7px}#minimap{top:530px;right:10px;width:166px;padding:7px}#minimap-canvas{width:166px;height:132px}#minimap-telemetry{display:none}}
     .warn{color:#ffd7a0}.ok{color:#dfffd9}
   </style>
 </head>
 <body>
 <div id="app"></div>
-<button id="browse-toggle" type="button">浏览月球 · B</button>
-<section id="browse-panel" aria-label="月球浏览与选点">
-  <h1>月球浏览 · Browse Mode</h1>
-  <p>左键拖动旋转 · 右键拖动平移 · 滚轮缩放<br>触屏：单指旋转，双指平移与缩放<br>单击球面选点，再从该地点开始驾驶。</p>
-  <p>NASA / LROC 真实月球影像，缩放时自动提升 DEM 细节。<strong>±60° 以外仅显示影像，无驾驶 DEM。</strong></p>
+
+<div id="global-tools">
+  <label id="language-control"><span data-i18n="language.label">Language</span>
+    <select id="language-select" aria-label="Language"></select>
+  </label>
+  <button id="debug-toggle" type="button" data-i18n="debug.toggle">DEBUG · F10</button>
+</div>
+
+<button id="browse-toggle" type="button" data-i18n="browse.toggle">Browse Moon · B</button>
+
+<section id="browse-panel" aria-label="Lunar browse and landing selection">
+  <h1 data-i18n="browse.title">Lunar Browse · Browse Mode</h1>
+  <p><span data-i18n="browse.controls">Drag to rotate · Right-drag to pan · Wheel to zoom</span><br><span data-i18n="browse.controls2">Click the lunar surface to select a location, then start driving from there.</span></p>
+  <p data-i18n="browse.dataIntro">Real lunar imagery and DEM terrain. Terrain detail increases automatically as you zoom.</p>
+
   <div class="map-layers" aria-label="Map layers">
-    <div class="map-layers-head">MAP LAYERS</div>
-    <div class="map-layer-row"><label class="map-layer-check"><input id="browse-grid" type="checkbox"> GRID / ±60°</label></div>
-    <div class="map-layer-row"><label for="map-places-mode">PLACES</label><select id="map-places-mode"><option value="off">OFF</option><option value="names">NAMES</option><option value="all" selected>ALL</option></select></div>
-    <div class="map-layer-row"><label for="map-places-filter">FILTER</label><select id="map-places-filter"><option value="all" selected>ALL</option><option value="unexplored">UNEXPLORED</option><option value="inprogress">IN PROGRESS</option><option value="explored">EXPLORED</option></select></div>
-    <div class="map-layer-row"><label class="map-layer-check"><input id="route-visible" type="checkbox" checked> ROUTE</label></div>
+    <div class="map-layers-head" data-i18n="map.layers">MAP LAYERS</div>
+    <div class="map-layer-row"><label class="map-layer-check"><input id="browse-grid" type="checkbox"> <span data-i18n="map.grid">GRID</span></label></div>
+    <div class="map-layer-row"><label for="map-places-mode" data-i18n="map.places">PLACES</label><select id="map-places-mode"><option value="off" data-i18n="common.off">OFF</option><option value="names" data-i18n="common.names">NAMES</option><option value="all" selected data-i18n="common.all">ALL</option></select></div>
+    <div class="map-layer-row"><label for="map-places-filter" data-i18n="map.filter">FILTER</label><select id="map-places-filter"><option value="all" selected data-i18n="common.all">ALL</option><option value="unexplored" data-i18n="filter.unexplored">UNEXPLORED</option><option value="inprogress" data-i18n="filter.inprogress">IN PROGRESS</option><option value="explored" data-i18n="filter.explored">EXPLORED</option></select></div>
+    <div class="map-layer-row"><label class="map-layer-check"><input id="route-visible" type="checkbox" checked> <span data-i18n="map.route">ROUTE</span></label></div>
   </div>
-  <div id="selected-coords">尚未选点</div>
+
+  <div id="selected-coords">No location selected</div>
   <form id="coordinate-form">
-    <div class="row"><label>纬度（北正 / 南负）<br><input id="pick-lat" type="number" min="-90" max="90" step="any" required></label><label>经度（东经 0–360°）<br><input id="pick-lon" type="number" min="0" max="360" step="any" required></label></div>
-    <div class="row"><button type="submit">定位坐标</button><button id="browse-home" type="button">居中选点 / 全月视图</button></div>
+    <div class="row">
+      <label><span data-i18n="browse.latitude">LATITUDE</span><br><input id="pick-lat" data-i18n-title="browse.latitudeHint" type="number" min="-90" max="90" step="any" required></label>
+      <label><span data-i18n="browse.longitude">LONGITUDE</span><br><input id="pick-lon" data-i18n-title="browse.longitudeHint" type="number" min="0" max="360" step="any" required></label>
+    </div>
+    <div class="row"><button type="submit" data-i18n="browse.goto">GO TO</button><button id="browse-home" type="button" data-i18n="browse.fullMoon">FULL MOON</button></div>
   </form>
   <p id="browse-message" role="status" aria-live="polite"></p>
-  <div class="row"><button id="drive-selected" type="button" disabled>从这里驾驶</button><button id="resume-drive" type="button" disabled>返回原驾驶位置</button></div>
-  <p class="muted">B：浏览 / 驾驶切换 · Esc：返回驾驶<br>1–4：原地点快捷键 · F1–F6：原边界测试</p>
-  <div id="overview-status">正在加载 NASA / LROC 影像和真实 DEM…</div>
+  <div class="row"><button id="drive-selected" type="button" disabled data-i18n="browse.drive">DRIVE FROM HERE</button><button id="resume-drive" type="button" disabled data-i18n="browse.returnRover">RETURN TO ROVER</button></div>
+  <p class="muted" data-i18n="browse.shortHelp">B: Browse / Drive · Esc: Return</p>
+  <div id="overview-status">Loading lunar terrain…</div>
 </section>
+
 <div id="hud" hidden>
-  <div class="top"><span class="badge">NASA SLDEM / LOLA // 1 UNIT = 1 M</span></div>
+  <div class="top"><span class="badge" data-i18n="brand">LUNAR SIM</span></div>
   <div class="site">
     <div id="site-name" class="name">LOADING TERRAIN</div>
     <div id="site-coords" class="muted">--</div>
-    <div id="site-ref" class="muted">REAL DEM // NO HAND-MADE LANDMARK SHAPES</div>
+    <div id="site-ref" class="muted"></div>
     <div id="altitude" class="muted">ELEV -- m</div>
   </div>
   <div class="stats">
     <div><span id="speed" class="speed">0</span><span class="unit">KM/H</span></div>
-    <div id="players">OFFLINE</div>
-    <div id="surface">DEM LOADING</div>
+    <div id="players" data-i18n="network.offline">OFFLINE</div>
+    <div id="surface">LOADING TERRAIN</div>
   </div>
+
   <section id="gravity-control" aria-label="Gravity control">
-    <div class="gravity-head"><span>GRAVITY</span><span id="gravity-value" class="gravity-value">1.62 m/s²</span></div>
+    <div class="gravity-head"><span data-i18n="gravity.title">GRAVITY</span><span id="gravity-value" class="gravity-value">1.620 m/s²</span></div>
     <input id="gravity-slider" class="gravity-range" type="range" min="0" max="274.8" step="0.001" value="1.62" aria-label="Gravity acceleration">
     <div class="gravity-row"><input id="gravity-number" type="number" min="0" max="274.8" step="0.001" value="1.620" aria-label="Gravity value"><span>m/s²</span></div>
     <select id="gravity-preset" class="gravity-select" aria-label="Gravity preset">
-      <option value="custom">自定义 / Custom</option>
-      <option value="zero" data-gravity="0">零重力 · 0.000 m/s²</option>
-      <option value="moon" data-gravity="1.62" selected>月球 · 1.620 m/s²</option>
-      <option value="mercury" data-gravity="3.70">水星 · 3.700 m/s²</option>
-      <option value="venus" data-gravity="8.87">金星 · 8.870 m/s²</option>
-      <option value="earth" data-gravity="9.798">地球 · 9.798 m/s²</option>
-      <option value="mars" data-gravity="3.71">火星 · 3.710 m/s²</option>
-      <option value="jupiter" data-gravity="24.79">木星 · 24.790 m/s²</option>
-      <option value="saturn" data-gravity="10.44">土星 · 10.440 m/s²</option>
-      <option value="uranus" data-gravity="8.87">天王星 · 8.870 m/s²</option>
-      <option value="neptune" data-gravity="11.15">海王星 · 11.150 m/s²</option>
-      <option value="sun" data-gravity="274.8">太阳 · 274.800 m/s²</option>
+      <option value="custom" data-i18n="gravity.custom">Custom</option>
+      <option value="zero" data-gravity="0" data-i18n="gravity.zero">Zero gravity</option>
+      <option value="moon" data-gravity="1.62" selected data-i18n="gravity.moon">Moon</option>
+      <option value="mercury" data-gravity="3.70" data-i18n="gravity.mercury">Mercury</option>
+      <option value="venus" data-gravity="8.87" data-i18n="gravity.venus">Venus</option>
+      <option value="earth" data-gravity="9.798" data-i18n="gravity.earth">Earth</option>
+      <option value="mars" data-gravity="3.71" data-i18n="gravity.mars">Mars</option>
+      <option value="jupiter" data-gravity="24.79" data-i18n="gravity.jupiter">Jupiter</option>
+      <option value="saturn" data-gravity="10.44" data-i18n="gravity.saturn">Saturn</option>
+      <option value="uranus" data-gravity="8.87" data-i18n="gravity.uranus">Uranus</option>
+      <option value="neptune" data-gravity="11.15" data-i18n="gravity.neptune">Neptune</option>
+      <option value="sun" data-gravity="274.8" data-i18n="gravity.sun">Sun</option>
     </select>
   </section>
+
   <section id="celestial-control" aria-label="Celestial time control">
-    <div class="celestial-head"><span>CELESTIAL TIME · UTC</span><button id="photo-button" class="photo-btn" type="button" title="拍照 / Photo">PHOTO · P</button></div>
+    <div class="celestial-head"><span data-i18n="celestial.title">CELESTIAL TIME · UTC</span><button id="photo-button" class="photo-btn" type="button" data-i18n="celestial.photo">PHOTO · P</button></div>
     <input id="celestial-time" class="celestial-time" type="datetime-local" step="1">
-    <div class="celestial-row"><button id="time-prev-day" type="button">−1D</button><button id="time-now" type="button">NOW</button><button id="time-next-day" type="button">+1D</button><button id="time-play" type="button">PLAY</button></div>
-    <div class="celestial-row"><span>RATE</span><select id="time-rate"><option value="1">1×</option><option value="60">60×</option><option value="3600" selected>3600×</option><option value="86400">1 day/s</option></select><span id="photo-status"></span></div>
+    <div class="celestial-row"><button id="time-prev-day" type="button">−1D</button><button id="time-now" type="button" data-i18n="celestial.now">NOW</button><button id="time-next-day" type="button">+1D</button><button id="time-play" type="button" data-i18n="celestial.play">PLAY</button></div>
+    <div class="celestial-row"><span data-i18n="celestial.rate">RATE</span><select id="time-rate"><option value="1">1×</option><option value="60">60×</option><option value="3600" selected>3600×</option><option value="86400" data-i18n="celestial.dayRate">1 day/s</option></select><span id="photo-status"></span></div>
     <div id="celestial-status" class="celestial-status">SUN -- · EARTH --</div>
   </section>
+
   <section id="exploration-control" aria-label="Rover exploration controls">
-    <div class="exploration-head"><span>ROVER · EXPLORATION</span><span id="exploration-progress" class="exploration-stat">0.00%</span></div>
-    <div class="exploration-row"><button id="headlights-toggle" type="button">LIGHTS OFF · L</button><button id="camera-recenter" type="button">CENTER · C</button></div>
-    <div class="exploration-row"><span id="exploration-area" class="exploration-grow">NO ACTIVE AREA</span><span id="exploration-pois">0 / 0 POI</span></div>
-    <div class="exploration-row"><span>ODOMETER</span><span id="odometer" class="exploration-stat exploration-grow">0.00 km</span><span id="session-distance">0.00 km</span></div>
-    <div class="exploration-check"><label><input id="obelisks-visible" type="checkbox" checked> OBELISKS</label></div>
-    <div class="exploration-row"><button id="route-clear" type="button">CLEAR ROUTE</button><span id="exploration-count" class="exploration-grow"></span></div>
+    <div class="exploration-head"><span data-i18n="exploration.title">ROVER · EXPLORATION</span><span id="exploration-progress" class="exploration-stat">0.00%</span></div>
+    <div class="exploration-row"><button id="headlights-toggle" type="button" data-i18n="exploration.lightsOff">LIGHTS OFF · L</button><button id="camera-recenter" type="button" data-i18n="exploration.center">CENTER · C</button></div>
+    <div class="exploration-row"><span id="exploration-area" class="exploration-grow" data-i18n="exploration.noArea">NO ACTIVE AREA</span><span id="exploration-pois">0 / 0 POI</span></div>
+    <div class="exploration-row"><span data-i18n="exploration.odometer">ODOMETER</span><span id="odometer" class="exploration-stat exploration-grow">0.00 km</span><span id="session-distance">0.00 km</span></div>
+    <div class="exploration-check"><label><input id="obelisks-visible" type="checkbox" checked> <span data-i18n="exploration.obelisks">OBELISKS</span></label></div>
+    <div class="exploration-row"><button id="route-clear" type="button" data-i18n="exploration.clearRoute">CLEAR ROUTE</button><span id="exploration-count" class="exploration-grow"></span></div>
   </section>
-  <section id="minimap" aria-label="月球车小地图">
-    <div class="minimap-head"><span class="minimap-title">LOCAL MAP · NORTH UP</span><span class="minimap-tools"><button id="minimap-zoom-in" type="button" title="放大小地图">＋</button><button id="minimap-zoom-out" type="button" title="缩小小地图">−</button></span></div>
-    <canvas id="minimap-canvas" aria-label="北朝上的局部地形、车辆、轨迹和联机玩家"></canvas>
+
+  <section id="minimap" aria-label="Local rover map">
+    <div class="minimap-head"><span class="minimap-title" data-i18n="minimap.title">LOCAL MAP · NORTH UP</span><span class="minimap-tools"><button id="minimap-zoom-in" type="button" data-i18n-title="minimap.zoomIn">+</button><button id="minimap-zoom-out" type="button" data-i18n-title="minimap.zoomOut">−</button></span></div>
+    <canvas id="minimap-canvas" aria-label="North-up local terrain, rover, route and exploration points"></canvas>
     <div id="minimap-coords">--</div>
     <div id="minimap-telemetry">HDG -- · ELEV --</div>
-    <div id="minimap-scale-label">视野 -- · 北朝上</div>
+    <div id="minimap-scale-label">--</div>
   </section>
+
   <div class="reticle"></div>
-  <div class="help">L 前灯　C 镜头居中　W/S 加速·制动　A/D 转向　Shift 手刹　R 复位　鼠标拖动环视<br>1 Apollo 15　2 Tycho　3 Aristarchus　4 Copernicus　B 浏览月球　F1–F6 边界测试</div>
-  <div class="status"><div id="dem-status">DEM: --</div><div id="lod-status">LOD: --</div></div>
+  <div class="help" data-i18n="hud.controls">L · C · W/S · A/D · Shift · R · B</div>
 </div>
+
+<section id="debug-hud" hidden aria-label="Debug HUD">
+  <div class="debug-head"><span data-i18n="debug.title">DEBUG HUD</span><button id="debug-close" type="button">×</button></div>
+  <label class="debug-check"><input id="debug-provider-boundaries" type="checkbox"> <span data-i18n="debug.providerBoundaries">DEM PROVIDER BOUNDARIES</span></label>
+  <div class="debug-grid">
+    <span data-i18n="debug.provider">Provider</span><b id="debug-provider">--</b>
+    <span data-i18n="debug.block">Block</span><b id="debug-block">--</b>
+    <span data-i18n="debug.lod">LOD</span><b id="debug-lod">--</b>
+    <span data-i18n="debug.meshes">Active meshes</span><b id="debug-meshes">--</b>
+    <span data-i18n="debug.tiles">Cached height tiles</span><b id="debug-tiles">--</b>
+    <span data-i18n="debug.packs">Cached packs</span><b id="debug-packs">--</b>
+    <span data-i18n="debug.blocks">Loaded blocks</span><b id="debug-blocks">--</b>
+    <span data-i18n="debug.radius">Moon radius</span><b id="debug-radius">1,737,400 m</b>
+    <span data-i18n="debug.origin">Floating origin E/N</span><b id="debug-origin">--</b>
+    <span data-i18n="debug.rover">Rover lat/lon/elev</span><b id="debug-rover">--</b>
+    <span data-i18n="debug.polar">Polar provider</span><b id="debug-polar">--</b>
+    <span data-i18n="debug.cache">Terrain cache</span><b id="debug-cache">--</b>
+  </div>
+  <div id="dem-status" class="debug-status">DEM: --</div>
+  <div id="lod-status" class="debug-status">LOD: --</div>
+</section>
+
 <div id="discovery-toast" role="status" aria-live="polite" hidden><div id="discovery-toast-title" class="discovery-toast-title"></div><div id="discovery-toast-main" class="discovery-toast-main"></div><div id="discovery-toast-sub" class="discovery-toast-sub"></div></div>
 <script type="module" src="/src/main.js"></script>
 </body>

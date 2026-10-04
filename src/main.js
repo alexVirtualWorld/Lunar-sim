@@ -11,6 +11,7 @@ import { Multiplayer } from './network/Multiplayer.js';
 import { RoverMiniMap } from './ui/RoverMiniMap.js';
 import { LunarCelestialSystem, computeLunarNightLighting } from './astronomy/LunarCelestialSystem.js';
 import { ExplorationManager } from './exploration/ExplorationManager.js';
+import { initLanguage, setLanguage, populateLanguageSelect, t, applyI18n } from './i18n.js';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
@@ -91,8 +92,28 @@ const ui = {
   discoveryToast: document.querySelector('#discovery-toast'),
   discoveryToastTitle: document.querySelector('#discovery-toast-title'),
   discoveryToastMain: document.querySelector('#discovery-toast-main'),
-  discoveryToastSub: document.querySelector('#discovery-toast-sub')
+  discoveryToastSub: document.querySelector('#discovery-toast-sub'),
+  languageSelect: document.querySelector('#language-select'),
+  debugToggle: document.querySelector('#debug-toggle'),
+  debugHud: document.querySelector('#debug-hud'),
+  debugClose: document.querySelector('#debug-close'),
+  debugProviderBoundaries: document.querySelector('#debug-provider-boundaries'),
+  debugProvider: document.querySelector('#debug-provider'),
+  debugBlock: document.querySelector('#debug-block'),
+  debugLod: document.querySelector('#debug-lod'),
+  debugMeshes: document.querySelector('#debug-meshes'),
+  debugTiles: document.querySelector('#debug-tiles'),
+  debugPacks: document.querySelector('#debug-packs'),
+  debugBlocks: document.querySelector('#debug-blocks'),
+  debugOrigin: document.querySelector('#debug-origin'),
+  debugRover: document.querySelector('#debug-rover'),
+  debugPolar: document.querySelector('#debug-polar'),
+  debugCache: document.querySelector('#debug-cache')
 };
+
+initLanguage();
+populateLanguageSelect(ui.languageSelect);
+applyI18n();
 
 const floatingOrigin = new FloatingOrigin(APP_CONFIG.floatingOriginThreshold);
 const regolith = createLunarRegolithMaterial();
@@ -227,7 +248,7 @@ ui.timeNow?.addEventListener('click', () => setCelestialDate(new Date()));
 ui.timeRate?.addEventListener('change', e => celestial.setTimeScale(e.currentTarget.value));
 ui.timePlay?.addEventListener('click', () => {
   celestial.setPlaying(!celestial.playing);
-  ui.timePlay.textContent = celestial.playing ? 'PAUSE' : 'PLAY';
+  ui.timePlay.textContent = celestial.playing ? t('celestial.pause') : t('celestial.play');
 });
 celestial.setTimeScale(ui.timeRate?.value || 3600);
 syncCelestialTimeInput(true);
@@ -238,7 +259,7 @@ rover.setHeadlights(localStorage.getItem(HEADLIGHT_STORAGE_KEY) === '1');
 function setHeadlights(value) {
   const on = rover.setHeadlights(value);
   localStorage.setItem(HEADLIGHT_STORAGE_KEY, on ? '1' : '0');
-  if (ui.headlightsToggle) ui.headlightsToggle.textContent = on ? 'LIGHTS ON · L' : 'LIGHTS OFF · L';
+  if (ui.headlightsToggle) ui.headlightsToggle.textContent = on ? t('exploration.lightsOn') : t('exploration.lightsOff');
   return on;
 }
 
@@ -249,16 +270,30 @@ function formatDistance(meters) {
   return `${Math.round(meters)} m`;
 }
 
+function localizedPoiType(type) {
+  const keys = {
+    'ROCK FIELD':'poi.rockField',
+    'SMALL CRATER':'poi.smallCrater',
+    'RIDGE VIEW':'poi.ridgeView',
+    'LOW BASIN':'poi.lowBasin',
+    'SUNLIGHT POINT':'poi.sunlightPoint',
+    'SCENIC OVERLOOK':'poi.scenicOverlook',
+    'SLOPE':'poi.slope',
+    'GEOLOGY POINT':'poi.geologyPoint'
+  };
+  return t(keys[type] || 'exploration.poi');
+}
+
 function updateExplorationUI() {
   if (!ui.explorationProgress) return;
   ui.explorationProgress.textContent = `${exploration.progressPercent.toFixed(2)}%`;
   ui.explorationCount.textContent = exploration.explorationCount
     ? `${exploration.completedCount} / ${exploration.explorationCount}`
-    : 'GAZETTEER LOADING';
-  ui.explorationArea.textContent = exploration.activeFeature?.name || 'NO ACTIVE AREA';
-  ui.explorationPois.textContent = `${exploration.activeDiscoveredCount} / ${exploration.activePOIs.length} POI`;
+    : t('exploration.loading');
+  ui.explorationArea.textContent = exploration.activeFeature?.name || t('exploration.noArea');
+  ui.explorationPois.textContent = `${exploration.activeDiscoveredCount} / ${exploration.activePOIs.length} ${t('exploration.poi')}`;
   ui.odometer.textContent = formatDistance(exploration.totalDistanceMeters);
-  ui.sessionDistance.textContent = `SESSION ${formatDistance(exploration.sessionDistanceMeters)}`;
+  ui.sessionDistance.textContent = t('exploration.session', { value: formatDistance(exploration.sessionDistanceMeters) });
   ui.routeVisible.checked = exploration.settings.showRoute;
   ui.obelisksVisible.checked = exploration.settings.showObelisks;
 }
@@ -285,14 +320,14 @@ function playNextExplorationToast() {
 
   if (event.type === 'area_complete') {
     toast.classList.add('complete');
-    ui.discoveryToastTitle.textContent = 'AREA COMPLETE';
+    ui.discoveryToastTitle.textContent = t('exploration.areaComplete');
     ui.discoveryToastMain.textContent = event.feature?.name || 'LUNAR FEATURE';
-    ui.discoveryToastSub.textContent = (event.total || 0) + ' / ' + (event.total || 0) + ' POI · OBELISK UNLOCKED';
+    ui.discoveryToastSub.textContent = (event.total || 0) + ' / ' + (event.total || 0) + ' ' + t('exploration.poi') + ' · ' + t('exploration.obeliskUnlocked');
     browse?.refreshNomenclatureState?.();
   } else {
-    ui.discoveryToastTitle.textContent = 'POINT OF INTEREST DISCOVERED';
-    ui.discoveryToastMain.textContent = event.poi?.type || 'EXPLORATION POI';
-    ui.discoveryToastSub.textContent = (event.feature?.name || '') + ' · ' + (event.discovered || 0) + ' / ' + (event.total || 0) + ' POI';
+    ui.discoveryToastTitle.textContent = t('exploration.poiDiscovered');
+    ui.discoveryToastMain.textContent = localizedPoiType(event.poi?.type);
+    ui.discoveryToastSub.textContent = (event.feature?.name || '') + ' · ' + (event.discovered || 0) + ' / ' + (event.total || 0) + ' ' + t('exploration.poi');
   }
 
   requestAnimationFrame(() => toast.classList.add('show'));
@@ -320,7 +355,7 @@ ui.routeVisible?.addEventListener('change', e => {
 });
 ui.obelisksVisible?.addEventListener('change', e => exploration.setShowObelisks(e.currentTarget.checked));
 ui.routeClear?.addEventListener('click', () => {
-  if (!confirm('Clear the recorded rover route? Odometer and exploration progress will be kept.')) return;
+  if (!confirm(t('confirm.clearRoute'))) return;
   exploration.clearRoute();
   syncBrowseRoute();
 });
@@ -342,12 +377,12 @@ function capturePhoto() {
     a.click();
     a.remove();
     if (ui.photoStatus) {
-      ui.photoStatus.textContent = 'SAVED';
+      ui.photoStatus.textContent = t('photo.saved');
       setTimeout(() => { if (ui.photoStatus) ui.photoStatus.textContent = ''; }, 1200);
     }
   } catch (err) {
     console.error('[Photo]', err);
-    if (ui.photoStatus) ui.photoStatus.textContent = 'FAILED';
+    if (ui.photoStatus) ui.photoStatus.textContent = t('photo.failed');
   }
 }
 
@@ -396,9 +431,19 @@ const browse = new LunarBrowse(renderer, geo => {
   driveButton.disabled = switching || !covered;
   if (covered) scheduleLandingPrefetch(geo);
   browseMessage.textContent = covered
-    ? '已选点。点击“从这里驾驶”后检查并加载此处真实 DEM。'
-    : '此坐标不在月球有效纬度范围内。';
-}, text => document.querySelector('#overview-status').textContent = text);
+    ? t('browse.selected')
+    : t('browse.invalid');
+}, (text, ready) => {
+  const status = document.querySelector('#overview-status');
+  status.textContent = text;
+  if (!ready) {
+    clearTimeout(status._hideTimer);
+    status._hideTimer = null;
+    status.hidden = false;
+  } else if (!status.hidden && !status._hideTimer) {
+    status._hideTimer = setTimeout(() => { status.hidden = true; status._hideTimer = null; }, 1800);
+  }
+});
 
 browse.setExplorationManager(exploration);
 if (ui.mapPlacesMode) {
@@ -414,6 +459,86 @@ if (ui.mapPlacesFilter) {
   });
 }
 
+
+const DEBUG_HUD_STORAGE_KEY = 'lunar-sim-debug-hud';
+const DEBUG_BOUNDARY_STORAGE_KEY = 'lunar-sim-debug-provider-boundaries';
+let debugEnabled = localStorage.getItem(DEBUG_HUD_STORAGE_KEY) === '1';
+let debugProviderBoundaries = localStorage.getItem(DEBUG_BOUNDARY_STORAGE_KEY) === '1';
+
+function applyDebugHudState() {
+  if (ui.debugHud) ui.debugHud.hidden = !debugEnabled;
+  if (ui.debugProviderBoundaries) ui.debugProviderBoundaries.checked = debugProviderBoundaries;
+  browse.setProviderBoundariesVisible(debugEnabled && debugProviderBoundaries);
+  ui.debugToggle?.setAttribute('aria-pressed', String(debugEnabled));
+}
+
+function setDebugEnabled(value) {
+  debugEnabled = !!value;
+  localStorage.setItem(DEBUG_HUD_STORAGE_KEY, debugEnabled ? '1' : '0');
+  applyDebugHudState();
+}
+
+function updateDebugHud() {
+  if (!debugEnabled || !ui.debugHud) return;
+  const stats = terrain.stats();
+  const geo = driveReady && terrain.manifest ? terrain.geoAt(rover.east, rover.north) : browse.selected;
+  const meta = geo && terrain.loader?.index ? terrain.loader.blockForGeo(geo.lat, geo.lon) : null;
+  const projectionType = meta?.projection?.type || 'equirectangular';
+  const provider = projectionType === 'polar-stereographic'
+    ? 'LOLA ' + String(meta?.projection?.hemisphere || '').toUpperCase()
+    : (meta ? 'SLDEM2015' : '--');
+  const activeLods = [...terrain.active.values()]
+    .map(entry => entry?.tile?.lod ?? entry?.lod)
+    .filter(Number.isFinite);
+  const currentLod = activeLods.length ? Math.max(...activeLods) : '--';
+
+  if (ui.debugProvider) ui.debugProvider.textContent = provider;
+  if (ui.debugBlock) ui.debugBlock.textContent = meta?.id || '--';
+  if (ui.debugLod) ui.debugLod.textContent = currentLod + ' / ' + stats.maxLod;
+  if (ui.debugMeshes) ui.debugMeshes.textContent = String(stats.activeMeshes);
+  if (ui.debugTiles) ui.debugTiles.textContent = String(stats.cachedHeightTiles);
+  if (ui.debugPacks) ui.debugPacks.textContent = String(stats.cachedPacks ?? 0);
+  if (ui.debugBlocks) ui.debugBlocks.textContent = String(stats.loadedBlocks ?? 0);
+  if (ui.debugOrigin) ui.debugOrigin.textContent = Math.round(floatingOrigin.east) + ' / ' + Math.round(floatingOrigin.north) + ' m';
+  if (ui.debugRover) ui.debugRover.textContent = driveReady && geo
+    ? geo.lat.toFixed(5) + '°, ' + geo.lon.toFixed(5) + '°, ' + Math.round(rover.elevation || 0) + ' m'
+    : '--';
+  if (ui.debugPolar) ui.debugPolar.textContent = projectionType === 'polar-stereographic' ? 'YES' : 'NO';
+  if (ui.debugCache) ui.debugCache.textContent = (stats.cachedHeightTiles || 0) + ' tiles · ' + (stats.cachedPacks || 0) + ' packs';
+}
+
+function refreshLocalizedUI() {
+  applyI18n();
+  if (ui.languageSelect) ui.languageSelect.value = document.documentElement.lang;
+  setHeadlights(rover.headlightsOn);
+  updateExplorationUI();
+  if (ui.timePlay) ui.timePlay.textContent = celestial.playing ? t('celestial.pause') : t('celestial.play');
+  browseButton.textContent = mode === 'browse' ? t('browse.toggleReturn') : t('browse.toggle');
+  ui.siteName.textContent = activeSite ? (activeSite.customLanding ? t('site.customLanding') : activeSite.name) : t('hud.loadingTerrain');
+  if (!browse.selected) selectedLabel.textContent = t('browse.noSelection');
+  if (!switching) browseMessage.textContent = browse.selected ? t('browse.selected') : '';
+  else browseMessage.textContent = t('browse.loadingLanding');
+  browse.status();
+}
+
+ui.languageSelect?.addEventListener('change', e => {
+  setLanguage(e.currentTarget.value);
+  refreshLocalizedUI();
+});
+ui.debugToggle?.addEventListener('click', () => setDebugEnabled(!debugEnabled));
+ui.debugClose?.addEventListener('click', () => setDebugEnabled(false));
+ui.debugProviderBoundaries?.addEventListener('change', e => {
+  debugProviderBoundaries = e.currentTarget.checked;
+  localStorage.setItem(DEBUG_BOUNDARY_STORAGE_KEY, debugProviderBoundaries ? '1' : '0');
+  browse.setProviderBoundariesVisible(debugEnabled && debugProviderBoundaries);
+});
+addEventListener('keydown', e => {
+  if (e.code === 'F10' && !e.repeat) {
+    e.preventDefault();
+    setDebugEnabled(!debugEnabled);
+  }
+});
+applyDebugHudState();
 function setMode(next) {
   if (next === 'drive' && !driveReady) return;
   mode = next;
@@ -426,7 +551,7 @@ function setMode(next) {
   if (next === 'drive') browse.hideFeaturePopup();
   browsePanel.hidden = next !== 'browse';
   document.querySelector('#hud').hidden = next === 'browse';
-  browseButton.textContent = next === 'browse' ? '浏览模式 · B 返回驾驶' : '浏览月球 · B';
+  browseButton.textContent = next === 'browse' ? t('browse.toggleReturn') : t('browse.toggle');
   resumeButton.disabled = !driveReady || switching;
   if (next === 'drive') roverCamera.snap();
 }
@@ -469,8 +594,9 @@ driveButton.addEventListener('click', () => {
   switchSite({
     ...browse.selected,
     name: feature?.name || 'CUSTOM LUNAR LANDING',
-    note: feature ? `${feature.type} // USGS / IAU GAZETTEER` : 'GLOBAL LUNAR DEM // SELECTED LOCATION',
+    note: feature ? feature.type + ' · USGS / IAU' : '',
     featureId: feature?.id ?? null,
+    customLanding: !feature,
     roverHeadingDeg: 0
   });
 });
@@ -487,16 +613,16 @@ async function switchSite(siteOrId) {
   resumeButton.disabled = true;
   browseButton.disabled = true;
   multiplayer.suspended = true;
-  browseMessage.textContent = '正在检查并加载真实 DEM，请稍候…';
+  browseMessage.textContent = t('browse.loadingLanding');
   let activated = false;
   try {
     // Preflight before invalidating the current driving anchor. Coverage is not
     // proof that the block and its actual finest-level samples exist on disk.
     await terrain.loader.loadIndex();
     const meta = terrain.loader.blockForGeo(site.lat, site.lon);
-    if (!meta) throw new Error('此坐标没有全球 DEM 区块');
+    if (!meta) throw new Error(t('terrain.noBlock'));
     const tile = await terrain.loader.ensureGeoLoaded(site.lat, site.lon);
-    if (!tile || !Number.isFinite(terrain.loader.sampleTileGeo(tile, site.lat, site.lon))) throw new Error('此处真实 DEM 数据缺失');
+    if (!tile || !Number.isFinite(terrain.loader.sampleTileGeo(tile, site.lat, site.lon))) throw new Error(t('terrain.sampleMissing'));
     activated = true;
     driveReady = false;
     rover.object.visible = false;
@@ -505,15 +631,15 @@ async function switchSite(siteOrId) {
     await ensureRoverLoaded();
     await rover.reset({ east: 0, north: 0, headingDeg: site.roverHeadingDeg || 0 });
     if ([[0, 0], [-3, 0], [3, 0], [0, -3], [0, 3]].some(([e, n]) => terrain.sampleLocalHeight(e, n) == null)) {
-      throw new Error('落点邻域 DEM 未覆盖或缺失，请选择距覆盖边界稍远的位置');
+      throw new Error(t('terrain.neighborhoodMissing'));
     }
     terrain.update(0, 0);
-    if (!terrain.active.size) throw new Error('可见 DEM 地形加载失败，请重试');
+    if (!terrain.active.size) throw new Error(t('terrain.visibleFailed'));
     activeSite = { ...site };
-    ui.siteName.textContent = site.name;
+    ui.siteName.textContent = site.customLanding ? t('site.customLanding') : site.name;
     ui.siteCoords.textContent = formatLatLon(site.lat, site.lon);
-    ui.siteRef.textContent = site.note;
-    ui.surface.textContent = 'SURFACE LOCK';
+    ui.siteRef.textContent = site.featureId ? site.note : '';
+    ui.surface.textContent = t('hud.surfaceLock');
     rover.object.visible = true;
     driveReady = true;
     exploration.resetSessionDistance();
@@ -531,7 +657,7 @@ async function switchSite(siteOrId) {
         elevation: rover.elevation
       });
     }
-    browseMessage.textContent = '真实 DEM 已就绪。';
+    browseMessage.textContent = t('browse.ready');
   } catch (err) {
     console.error(err);
     if (activated) {
@@ -540,8 +666,8 @@ async function switchSite(siteOrId) {
       terrain.clearMeshes();
       rover.object.visible = false;
     }
-    browseMessage.textContent = '无法开始驾驶：' + err.message + '。请选择其他地点或补齐该区块数据后重试。';
-    ui.dem.textContent = 'NO REAL DEM';
+    browseMessage.textContent = t('browse.noTerrain') + ' ' + err.message;
+    ui.dem.textContent = t('debug.noRealDem');
     ui.dem.className = 'warn';
   } finally {
     switching = false;
@@ -627,6 +753,7 @@ miniMap = new RoverMiniMap({
   root: document.querySelector('#minimap')
 });
 
+let lastDebugUpdate = 0;
 const clock = new THREE.Clock();
 function loop() {
   requestAnimationFrame(loop);
@@ -656,7 +783,7 @@ function loop() {
       if (sky) {
         const s = sky.sun, e = sky.earth;
         if (ui.celestialStatus) {
-          ui.celestialStatus.textContent = 'SUN ALT ' + s.altitude.toFixed(1) + '° AZ ' + s.azimuth.toFixed(1) + '° · EARTH ALT ' + e.altitude.toFixed(1) + '° AZ ' + e.azimuth.toFixed(1) + '°';
+          ui.celestialStatus.textContent = t('celestial.sun') + ' ALT ' + s.altitude.toFixed(1) + '° AZ ' + s.azimuth.toFixed(1) + '° · ' + t('celestial.earth') + ' ALT ' + e.altitude.toFixed(1) + '° AZ ' + e.azimuth.toFixed(1) + '°';
         }
 
         const nightLighting = computeLunarNightLighting(s, e);
@@ -670,14 +797,16 @@ function loop() {
       exploration.update(geo);
       updateExplorationUI();
     }
-    ui.altitude.textContent = `ELEV ${Math.round(rover.elevation)} m // R=1737400 m`;
+    ui.altitude.textContent = t('hud.elev', { value: Math.round(rover.elevation) });
     ui.speed.textContent = Math.round(Math.abs(rover.speed) * 3.6);
     ui.surface.textContent = terrain.sampleLocalHeight(rover.east, rover.north) == null
-      ? 'SURFACE CACHE MISS'
-      : (rover.grounded ? `SURFACE LOCK // G ${rover.gravity.toFixed(2)}` : `AIRBORNE // G ${rover.gravity.toFixed(2)}`);
+      ? t('hud.surfaceMiss')
+      : (rover.grounded ? t('hud.surfaceLock') : t('hud.airborne'));
     const stats = terrain.stats();
     ui.lod.textContent = `LOD: ${stats.activeMeshes} meshes / ${stats.cachedHeightTiles} tiles / ${stats.cachedPacks ?? 0} packs / ${stats.loadedBlocks ?? 0} blocks / max ${stats.maxLod}`;
   }
+
+  if (debugEnabled && performance.now() - lastDebugUpdate > 250) { updateDebugHud(); lastDebugUpdate = performance.now(); }
 
   if (mode === 'browse') browse.render(renderer);
   else renderer.render(scene, camera);

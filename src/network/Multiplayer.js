@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { t } from '../i18n.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { io } from 'socket.io-client';
 import { geodeticOffsetMeters, curvatureSag } from '../geo/LunarCoordinates.js';
@@ -72,9 +73,17 @@ export class Multiplayer {
     this.socket = io(import.meta.env.VITE_SERVER_URL || url, {
       transports: ['polling','websocket'], reconnection: true, reconnectionDelay: 1000, timeout: 4000
     });
-    this.socket.on('connect', () => playersLabel.textContent = 'ONLINE');
-    this.socket.on('connect_error', () => playersLabel.textContent = 'OFFLINE // :3000');
-    this.socket.on('population', n => playersLabel.textContent = `${n} PILOT${n === 1 ? '' : 'S'}`);
+    this.population = null;
+    this.refreshPlayersLabel = () => {
+      playersLabel.textContent = this.socket.connected
+        ? (this.population == null ? t('network.online') : t('network.pilots', { count: this.population }))
+        : t('network.offline');
+    };
+    this.socket.on('connect', this.refreshPlayersLabel);
+    this.socket.on('disconnect', () => { this.population = null; this.refreshPlayersLabel(); });
+    this.socket.on('connect_error', this.refreshPlayersLabel);
+    this.socket.on('population', n => { this.population = n; this.refreshPlayersLabel(); });
+    window.addEventListener('lunar-language-changed', this.refreshPlayersLabel);
     this.socket.on('roster', list => list.forEach(s => this.applyPeer(s)));
     this.socket.on('peer-state', s => this.applyPeer(s));
     this.socket.on('peer-left', id => this.removePeer(id));
