@@ -56,8 +56,14 @@ python -m pip install -r tools/lunar-data/requirements.txt
 
 ### 2. Download/build lunar terrain
 
-Recommended default:
+**Recommended: Use Pre-processed Data**
+To save time, you can download the pre-processed LOD0-4 terrain data directly without running the build script.
+1. Go to the [Releases page](https://github.com/alexVirtualWorld/Lunar-sim/releases/tag/data-v1) and download `blocks.zip` and `polar.zip` from the Assets section.
+2. Extract the zip files.
+3. Place the extracted files into the `public/moon/global/blocks` and `public/moon/global/polar` directories within your project, respectively.
 
+**Alternative: Build from source**
+If you prefer to download and build the data yourself, you can run the python script:
 ```bash
 python tools/lunar-data/download_moon_data.py
 ```
