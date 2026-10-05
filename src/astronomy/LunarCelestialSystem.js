@@ -7,6 +7,8 @@ import {
   RotationAxis
 } from 'astronomy-engine';
 
+const appAssetUrl = path => `${import.meta.env.BASE_URL}${String(path).replace(/^\/+/, '')}`;
+
 const DEG = Math.PI / 180;
 const RAD = 180 / Math.PI;
 const EARTH_RADIUS_KM = 6378.137;
@@ -263,8 +265,8 @@ export class LunarCelestialSystem {
     });
 
     this.visualAssetsPromise = Promise.all([
-      load('/textures/earth/earth_surface_nasa_2048.png'),
-      load('/textures/earth/earth_clouds_nasa_modis_2048.png')
+      load(appAssetUrl('textures/earth/earth_surface_nasa_2048.png')),
+      load(appAssetUrl('textures/earth/earth_clouds_nasa_modis_2048.png'))
     ]).then(([surface, clouds]) => {
       surface.colorSpace = THREE.SRGBColorSpace;
       surface.anisotropy = 8;
@@ -284,7 +286,7 @@ export class LunarCelestialSystem {
     return this.visualAssetsPromise;
   }
 
-  async loadStarCatalog(url = '/data/astronomy/hyg_bright_v41.json') {
+  async loadStarCatalog(url = appAssetUrl('data/astronomy/hyg_bright_v41.json')) {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Star catalog HTTP ${response.status}: ${url}`);
     const catalog = await response.json();

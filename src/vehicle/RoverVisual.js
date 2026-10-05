@@ -1,6 +1,8 @@
 ﻿import * as THREE from 'three';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
+const appAssetUrl = path => `${import.meta.env.BASE_URL}${String(path).replace(/^\/+/, '')}`;
+
 const WHEEL_KEYS = [
   'FL',
   'FR',
@@ -158,7 +160,7 @@ export async function loadRoverTemplate(
   config
 ) {
   const gltf = await loader.loadAsync(
-    '/models/rover.glb'
+    appAssetUrl('models/rover.glb')
   );
 
   const template = gltf.scene;

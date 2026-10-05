@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { destinationPoint, geodeticOffsetMeters } from '../geo/LunarCoordinates.js';
 
+const appAssetUrl = path => `${import.meta.env.BASE_URL}${String(path).replace(/^\/+/, '')}`;
+
 const STORAGE_KEY = 'lunar-rover-exploration-v1';
 const DISCOVERY_RADIUS_M = 35;
 const ROUTE_STEP_M = 20;
@@ -113,7 +115,7 @@ export class ExplorationManager {
     }
   }
 
-  async loadCatalog(url = '/data/moon/iau_moon_features.json') {
+  async loadCatalog(url = appAssetUrl('data/moon/iau_moon_features.json')) {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Moon Gazetteer HTTP ${response.status}: ${url}`);
     this.catalog = await response.json();

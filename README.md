@@ -107,6 +107,22 @@ npm run build
 
 `VITE_BASE_PATH` controls where the application assets are served from. `VITE_LUNAR_DATA_BASE_URL` independently controls where lunar DEM data is loaded from, so custom deployments can configure either or both.
 
+Static runtime assets such as `rover.glb`, the Earth textures, the star catalog, and the lunar gazetteer are resolved through Vite's `BASE_URL`. This means they continue to work both at `/` and under a project subpath such as `/Lunar-sim/`.
+
+### Multiplayer deployment
+
+Local development keeps the existing behavior: `npm run dev` automatically connects Socket.IO to port `3000` on the same host.
+
+A static production build (including GitHub Pages) does **not** attempt to connect to the page origin by default, because GitHub Pages cannot run the Node/Socket.IO server. The simulator therefore runs offline/single-player unless a multiplayer server is explicitly configured.
+
+To enable multiplayer in a production deployment, set:
+
+```text
+VITE_SERVER_URL=https://your-socket-server.example.com
+```
+
+The configured server must run the project's Socket.IO backend and permit connections from the deployed frontend origin.
+
 For GitHub Pages, deploy the generated `dist/` directory rather than serving the repository source root directly.
 
 ## Quick start

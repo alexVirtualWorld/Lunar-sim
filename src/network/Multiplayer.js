@@ -69,10 +69,15 @@ export class Multiplayer {
       return null;
     });
 
-    const url = location.port === '5173' ? `${location.protocol}//${location.hostname}:3000` : location.origin;
-    this.socket = io(import.meta.env.VITE_SERVER_URL || url, {
+    const configuredServerUrl = import.meta.env.VITE_SERVER_URL?.trim();
+    const devServerUrl = `${location.protocol}//${location.hostname}:3000`;
+    const serverUrl = configuredServerUrl || (import.meta.env.DEV ? devServerUrl : null);
+    const socketOptions = {
       transports: ['polling','websocket'], reconnection: true, reconnectionDelay: 1000, timeout: 4000
-    });
+    };
+    this.socket = serverUrl
+      ? io(serverUrl, socketOptions)
+      : io(undefined, { ...socketOptions, autoConnect: false });
     this.population = null;
     this.refreshPlayersLabel = () => {
       playersLabel.textContent = this.socket.connected
