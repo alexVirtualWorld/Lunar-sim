@@ -755,7 +755,7 @@ export class LunarBrowse {
       // A global view stays at 2K; 4K/8K no longer upload during startup.
       if (i > 0) await this.waitForAlbedoUpgrade(width);
       try {
-        const texture = await loader.loadAsync(`/moon/albedo/browse-${width}.webp`);
+        const texture = await loader.loadAsync(`${import.meta.env.BASE_URL}moon/albedo/browse-${width}.webp`);
         if (i > 0) await this.waitForAlbedoUpgrade(width);
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.wrapS = THREE.RepeatWrapping;

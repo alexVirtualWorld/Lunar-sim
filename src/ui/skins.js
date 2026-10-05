@@ -324,6 +324,10 @@ function decorateControls() {
 }
 
 export function initSkinSystem() {
+  document.documentElement.style.setProperty(
+    '--skin-preset-image',
+    `url("${import.meta.env.BASE_URL}moon/albedo/browse-2048.webp")`
+  );
   createSkinPicker();
   createBrowseCollapse();
   watchBrowseVisibility();

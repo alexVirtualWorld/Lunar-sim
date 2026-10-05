@@ -1,4 +1,4 @@
-# Lunar Sim
+﻿# Lunar Sim
 
 A browser-based lunar simulator built with **Three.js, Vite, and Socket.IO**.
 
@@ -12,8 +12,8 @@ The project renders a real-scale Moon (`1 unit = 1 meter`) from lunar DEM data, 
 
 - Real lunar reference radius: **1,737,400 m**
 - Global terrain:
-  - **SLDEM2015 512 ppd** for 60°S–60°N
-  - **NASA/GSFC LOLA adjusted polar DEM** for 60°–90° north and south
+  - **SLDEM2015 512 ppd** for 60掳S鈥?0掳N
+  - **NASA/GSFC LOLA adjusted polar DEM** for 60掳鈥?0掳 north and south
 - Runtime quadtree LOD, packed DEM tiles, cross-LOD seam handling, and floating origin
 - Progressive terrain loading: the landing area becomes drivable before the full far field is built
 - Third-person rover with adjustable gravity, headlights, free camera, camera recenter, odometer, and route history
@@ -107,7 +107,7 @@ npm run build
 
 `VITE_BASE_PATH` controls where the application assets are served from. `VITE_LUNAR_DATA_BASE_URL` independently controls where lunar DEM data is loaded from, so custom deployments can configure either or both.
 
-Static runtime assets such as `rover.glb`, the Earth textures, the star catalog, and the lunar gazetteer are resolved through Vite's `BASE_URL`. This means they continue to work both at `/` and under a project subpath such as `/Lunar-sim/`.
+Static runtime assets such as `rover.glb`, the browse-mode lunar albedo, Photo Mode preview imagery, Earth textures, the star catalog, and the lunar gazetteer are resolved through Vite's `BASE_URL`. This means they continue to work both at `/` and under a project subpath such as `/Lunar-sim/`.
 
 ### Multiplayer deployment
 
@@ -165,7 +165,7 @@ LOD3
 LOD4
 ```
 
-In other words, `--lod 4` means **maximum LOD 4**, not “LOD4 only”.
+In other words, `--lod 4` means **maximum LOD 4**, not 鈥淟OD4 only鈥?
 
 Choose another maximum level:
 
@@ -185,7 +185,7 @@ The wrapper reuses the project's existing scientific build pipeline:
 SLDEM source download/build
   -> global block stitching
 LOLA polar download/build
-  -> ±60° polar boundary stitching
+  -> 卤60掳 polar boundary stitching
   -> seam validation
 ```
 
@@ -215,7 +215,7 @@ Build both data families (default):
 python tools/lunar-data/download_moon_data.py --lod 4 --part all
 ```
 
-Build only the 60°S–60°N SLDEM blocks:
+Build only the 60掳S鈥?0掳N SLDEM blocks:
 
 ```bash
 python tools/lunar-data/download_moon_data.py --lod 4 --part global
@@ -281,7 +281,7 @@ npm run build
 | R | Reload/reset the current landing site |
 | F10 | Toggle the Debug HUD |
 
-The UI also provides configurable gravity from 0 to 274.8 m/s², with presets for the Moon, planets, and the Sun.
+The UI also provides configurable gravity from 0 to 274.8 m/s虏, with presets for the Moon, planets, and the Sun.
 
 ### Browse Mode
 
@@ -294,7 +294,7 @@ The UI also provides configurable gravity from 0 to 274.8 m/s², with presets fo
   - place names / points
   - exploration status filter
   - recorded route
-- Enable the Debug HUD to show the ±60° SLDEM/LOLA provider boundaries
+- Enable the Debug HUD to show the 卤60掳 SLDEM/LOLA provider boundaries
 
 Place filters:
 
@@ -361,7 +361,7 @@ tools/lunar-data/
   build_global.py            SLDEM block builder
   stitch_global.py           SLDEM block seam stitching
   build_polar.py             LOLA polar builder
-  stitch_polar_boundary.py   direct ±60° boundary stitch
+  stitch_polar_boundary.py   direct 卤60掳 boundary stitch
   requirements.txt
   test_*.mjs                 data/runtime regression tests
 
@@ -427,3 +427,4 @@ In particular, do not commit generated `blocks/`, `polar/`, source-cache files, 
 Project source code is released under the [MIT License](LICENSE).
 
 That license applies to this repository's project code. It does **not** relicense NASA/USGS/IAU datasets, HYG data, imagery, or other third-party scientific/data assets. The included rover model is a project-created Hunyuan-generated asset; see [DATA_SOURCES.md](DATA_SOURCES.md) for provenance notes.
+
