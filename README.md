@@ -67,6 +67,48 @@ VITE_LUNAR_DATA_BASE_URL=/moon/global
 
 The terrain host must expose the same directory structure expected by `GlobalHeightTileLoader`, including `index.json`, block/polar manifests, `ranges.bin`, and packed LOD files.
 
+### Deployment base path
+
+Local development always uses `/`, so `npm run dev` continues to run at the normal local Vite URL.
+
+Production builds default to the GitHub Pages project path `/Lunar-sim/`. This makes the generated asset URLs work at:
+
+```text
+https://alexvirtualworld.github.io/Lunar-sim/
+```
+
+If you deploy Lunar Sim somewhere else, override the build base path with `VITE_BASE_PATH`.
+
+Deploy at a domain root:
+
+```bash
+VITE_BASE_PATH=/ npm run build
+```
+
+Windows PowerShell:
+
+```powershell
+$env:VITE_BASE_PATH='/'
+npm run build
+```
+
+Deploy under another subdirectory:
+
+```bash
+VITE_BASE_PATH=/my-app/ npm run build
+```
+
+Windows PowerShell:
+
+```powershell
+$env:VITE_BASE_PATH='/my-app/'
+npm run build
+```
+
+`VITE_BASE_PATH` controls where the application assets are served from. `VITE_LUNAR_DATA_BASE_URL` independently controls where lunar DEM data is loaded from, so custom deployments can configure either or both.
+
+For GitHub Pages, deploy the generated `dist/` directory rather than serving the repository source root directly.
+
 ## Quick start
 
 ### Requirements
