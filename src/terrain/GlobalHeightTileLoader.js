@@ -215,7 +215,16 @@ export class GlobalHeightTileLoader {
     const promise = (async () => {
       const res = await fetch(`/moon/global/${block._basePath}/${level.rangesPath}`, { cache: 'force-cache' });
       if (!res.ok) throw new Error(`DEM ranges failed ${block.id} lod ${lod}: ${res.status}`);
-      const arr = new Float32Array(await res.arrayBuffer());
+      const buffer = await res.arrayBuffer();
+
+      if (buffer.byteLength % Float32Array.BYTES_PER_ELEMENT !== 0) {
+        throw new Error(
+          `Invalid DEM ranges cache/data: ${block.id} lod ${lod}, ` +
+          `${buffer.byteLength} bytes`
+        );
+      }
+
+      const arr = new Float32Array(buffer);
       this.rangeCache.set(key, arr);
       this.pending.delete(pendingKey);
       return arr;

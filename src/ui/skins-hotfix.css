@@ -1,0 +1,54 @@
+/* Final layout guards layered over skins.css. */
+
+/* Keep the browse/return affordance readable even when main.js temporarily disables it. */
+#browse-toggle:disabled{
+  opacity:1!important;
+  filter:none!important;
+  visibility:visible!important;
+  color:var(--skin-ink)!important;
+  background:var(--skin-panel)!important;
+  border-color:var(--skin-line)!important;
+}
+
+/* Native checkboxes stay legible across all three skins. */
+body[data-skin] input[type="checkbox"]{
+  accent-color:var(--skin-accent);
+}
+
+/* Defensive visual guard: stale HMR skin scaffolds must never render twice. */
+#photo-mode > #skin-photo-modebar ~ #skin-photo-modebar,
+#photo-mode > #skin-photo-scroll ~ #skin-photo-scroll,
+#photo-mode > #skin-photo-footer ~ #skin-photo-footer,
+#skin-photo-scroll #skin-photo-modebar,
+#skin-photo-scroll #skin-photo-scroll,
+#skin-photo-folds #skin-photo-folds,
+#skin-photo-presets #skin-photo-presets{
+  display:none!important;
+}
+
+/* Avoid a second generated workspace/fold block consuming height before JS cleanup runs. */
+#photo-mode [id="skin-photo-modebar"]:not(:first-of-type){
+  display:none!important;
+}
+
+/* Keep Photo Mode compact; only the real controls scroll. */
+#photo-mode{
+  overscroll-behavior:contain;
+}
+#skin-photo-scroll{
+  max-height:calc(100vh - 230px);
+}
+body[data-skin="B"] #skin-photo-scroll{
+  max-height:calc(100vh - 180px);
+}
+body[data-skin="C"] #skin-photo-scroll{
+  max-height:calc(100vh - 220px);
+}
+
+/* Keep the collapsed landing card intentionally compact. */
+#browse-panel.is-collapsed{
+  min-height:0!important;
+}
+#browse-panel.is-collapsed .browse-panel-head{
+  min-height:22px;
+}

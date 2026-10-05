@@ -12,6 +12,9 @@ import { RoverMiniMap } from './ui/RoverMiniMap.js';
 import { LunarCelestialSystem, computeLunarNightLighting } from './astronomy/LunarCelestialSystem.js';
 import { ExplorationManager } from './exploration/ExplorationManager.js';
 import { initLanguage, setLanguage, populateLanguageSelect, t, applyI18n } from './i18n.js';
+import { initSkinSystem } from './ui/skins.js';
+
+initSkinSystem();
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
