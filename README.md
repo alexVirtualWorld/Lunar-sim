@@ -38,6 +38,35 @@ They are built locally from the upstream scientific datasets.
 
 The code repository stays small; each user can choose a maximum LOD appropriate for their disk and setup.
 
+### Terrain data source: local development vs production
+
+Lunar Sim keeps code and web terrain data separate. The runtime chooses the terrain base URL automatically:
+
+- `npm run dev` uses the local path `public/moon/global` via `/moon/global`.
+- Production builds use the public LOD0-LOD5 web dataset at `https://alexvirtualworld.github.io/Lunar-sim-data/moon/global`.
+- Any deployment can override the terrain host with the Vite environment variable `VITE_LUNAR_DATA_BASE_URL`.
+
+For example, to build against your own terrain host:
+
+```bash
+VITE_LUNAR_DATA_BASE_URL=https://example.com/moon/global npm run build
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:VITE_LUNAR_DATA_BASE_URL='https://example.com/moon/global'
+npm run build
+```
+
+To make a production build use terrain bundled under the same site, set:
+
+```text
+VITE_LUNAR_DATA_BASE_URL=/moon/global
+```
+
+The terrain host must expose the same directory structure expected by `GlobalHeightTileLoader`, including `index.json`, block/polar manifests, `ranges.bin`, and packed LOD files.
+
 ## Quick start
 
 ### Requirements

@@ -1,5 +1,16 @@
 import { normalizeLon360 } from '../geo/LunarCoordinates.js';
 
+const GLOBAL_DATA_BASE_URL = (
+  import.meta.env.VITE_LUNAR_DATA_BASE_URL ||
+  (import.meta.env.PROD
+    ? 'https://alexvirtualworld.github.io/Lunar-sim-data/moon/global'
+    : '/moon/global')
+).replace(/\/+$/, '');
+
+function globalDataUrl(path = '') {
+  return path ? GLOBAL_DATA_BASE_URL + '/' + path.replace(/^\/+/, '') : GLOBAL_DATA_BASE_URL;
+}
+
 export class GlobalHeightTileLoader {
   constructor({ maxPackCache = 32, maxTileCache = 512 } = {}) {
     this.index = null;
@@ -15,7 +26,7 @@ export class GlobalHeightTileLoader {
 
   async loadIndex() {
     if (this.index) return this.index;
-    const res = await fetch('/moon/global/index.json', { cache: 'no-cache' });
+    const res = await fetch(globalDataUrl('index.json'), { cache: 'no-cache' });
     if (!res.ok) throw new Error(`Global DEM index missing: ${res.status}. Run npm run data:global:test first.`);
     this.index = await res.json();
     return this.index;
@@ -71,7 +82,7 @@ export class GlobalHeightTileLoader {
     const key = `block:${blockId}`;
     if (this.pending.has(key)) return this.pending.get(key);
     const promise = (async () => {
-      const res = await fetch(`/moon/global/${meta.path}`, { cache: 'no-cache' });
+      const res = await fetch(globalDataUrl(meta.path), { cache: 'no-cache' });
       if (!res.ok) throw new Error(`Global DEM block manifest missing ${blockId}: ${res.status}`);
       const manifest = await res.json();
       manifest._indexMeta = meta;
@@ -213,7 +224,7 @@ export class GlobalHeightTileLoader {
     if (this.pending.has(pendingKey)) return this.pending.get(pendingKey);
     const level = this.level(block, lod);
     const promise = (async () => {
-      const res = await fetch(`/moon/global/${block._basePath}/${level.rangesPath}`, { cache: 'force-cache' });
+      const res = await fetch(globalDataUrl(`${block._basePath}/${level.rangesPath}`), { cache: 'force-cache' });
       if (!res.ok) throw new Error(`DEM ranges failed ${block.id} lod ${lod}: ${res.status}`);
       const buffer = await res.arrayBuffer();
 
@@ -255,7 +266,7 @@ export class GlobalHeightTileLoader {
     if (this.pending.has(pendingKey)) return this.pending.get(pendingKey);
     const p = String(pack).padStart(4, '0');
     const promise = (async () => {
-      const res = await fetch(`/moon/global/${block._basePath}/lod${lod}/pack_${p}.bin`, { cache: 'force-cache' });
+      const res = await fetch(globalDataUrl(`${block._basePath}/lod${lod}/pack_${p}.bin`), { cache: 'force-cache' });
       if (!res.ok) throw new Error(`DEM pack failed ${block.id} lod ${lod} pack ${p}: ${res.status}`);
       const buffer = await res.arrayBuffer();
       this.touchPack(key, buffer);
