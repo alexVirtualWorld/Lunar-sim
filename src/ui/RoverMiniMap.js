@@ -164,6 +164,34 @@ export class RoverMiniMap {
     }
   }
 
+  drawObelisk(ctx, width, height) {
+    const obelisk = this.exploration?.obeliskLocalPoint?.();
+    if (!obelisk) return;
+    const p = this.mapPoint(obelisk.east, obelisk.north, width, height);
+    if (p.x < -10 || p.y < -10 || p.x > width + 10 || p.y > height + 10) return;
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.fillStyle = 'rgba(226,236,244,.98)';
+    ctx.strokeStyle = 'rgba(7,18,28,.95)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -7);
+    ctx.lineTo(4.5, 1);
+    ctx.lineTo(2.4, 6);
+    ctx.lineTo(-2.4, 6);
+    ctx.lineTo(-4.5, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(125,255,218,.95)';
+    ctx.beginPath();
+    ctx.arc(0, 0, 1.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   drawPeers(ctx, width, height) {
     if (!this.multiplayer) return;
     ctx.fillStyle = '#74bfff';
@@ -240,6 +268,7 @@ export class RoverMiniMap {
     this.drawGrid(ctx, width, height);
     this.drawTrail(ctx, width, height);
     this.drawPOIs(ctx, width, height);
+    this.drawObelisk(ctx, width, height);
     this.drawPeers(ctx, width, height);
     this.drawRover(ctx, width, height);
     this.drawScale(ctx, width, height);

@@ -432,6 +432,23 @@ export class ExplorationManager {
     });
   }
 
+  obeliskLocalPoint() {
+    const f = this.activeFeature;
+    if (!f || !this.settings.showObelisks || !this.unlocked.has(Number(f.id)) || !this.terrain.manifest) {
+      return null;
+    }
+
+    const anchorOffset = geodeticOffsetMeters(this.terrain.anchor.lat, this.terrain.anchor.lon, f.lat, f.lon);
+    const random = rngFor('obelisk:' + f.id);
+    const a = random() * Math.PI * 2;
+    return {
+      featureId: Number(f.id),
+      feature: f,
+      east: anchorOffset.east + Math.sin(a) * 120,
+      north: anchorOffset.north + Math.cos(a) * 120
+    };
+  }
+
   notify(event = null) {
     this.onChange?.(this, event);
   }
