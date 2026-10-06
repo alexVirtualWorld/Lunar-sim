@@ -2,12 +2,13 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Lunar Sim</title>
   <style>
     html,body,#app{width:100%;height:100%;margin:0;overflow:hidden;background:#000;font-family:Inter,system-ui,sans-serif;color:#fff}
     canvas{display:block}
     #hud{position:fixed;inset:0;pointer-events:none;text-shadow:0 2px 12px #000}
+    #hud-panels{display:contents}#mobile-ui-toggle,#mobile-drive-controls{display:none}
     .badge{display:inline-block;padding:4px 9px;border:1px solid rgba(255,255,255,.26);border-radius:999px;background:rgba(0,0,0,.34);backdrop-filter:blur(8px)}
     .top{position:absolute;top:16px;left:18px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.88}
     .site{position:absolute;left:18px;top:52px;max-width:760px;font-size:11px;line-height:1.5;letter-spacing:.055em;text-transform:uppercase}
@@ -63,6 +64,7 @@
   </label>
   <button id="debug-toggle" type="button" data-i18n="debug.toggle">DEBUG · F10</button>
 </div>
+<button id="mobile-ui-toggle" type="button" aria-label="Interface controls" aria-expanded="false">☰</button>
 
 <button id="browse-toggle" type="button" data-i18n="browse.toggle">Browse Moon · B</button>
 
@@ -107,6 +109,7 @@
     <div id="surface">LOADING TERRAIN</div>
   </div>
 
+  <div id="hud-panels">
   <section id="gravity-control" aria-label="Gravity control">
     <div class="gravity-head"><span data-i18n="gravity.title">GRAVITY</span><span id="gravity-value" class="gravity-value">1.620 m/s²</span></div>
     <input id="gravity-slider" class="gravity-range" type="range" min="0" max="274.8" step="0.001" value="1.62" aria-label="Gravity acceleration">
@@ -143,6 +146,7 @@
     <div class="exploration-check"><label><input id="obelisks-visible" type="checkbox" checked> <span data-i18n="exploration.obelisks">OBELISKS</span></label></div>
     <div class="exploration-row"><button id="route-clear" type="button" data-i18n="exploration.clearRoute">CLEAR ROUTE</button><span id="exploration-count" class="exploration-grow"></span></div>
   </section>
+  </div>
 
   <section id="minimap" aria-label="Local rover map">
     <div class="minimap-head"><span class="minimap-title" data-i18n="minimap.title">LOCAL MAP · NORTH UP</span><span class="minimap-tools"><button id="minimap-zoom-in" type="button" data-i18n-title="minimap.zoomIn">+</button><button id="minimap-zoom-out" type="button" data-i18n-title="minimap.zoomOut">−</button></span></div>
@@ -151,6 +155,19 @@
     <div id="minimap-telemetry">HDG -- · ELEV --</div>
     <div id="minimap-scale-label">--</div>
   </section>
+
+  <div id="mobile-drive-controls" aria-label="Touch driving controls">
+    <div class="mobile-drive-actions">
+      <button id="mobile-headlights" type="button" aria-label="Toggle headlights">☼</button>
+      <button id="mobile-center" type="button" aria-label="Recenter camera">◎</button>
+      <button id="mobile-photo" type="button" aria-label="Photo mode">◉</button>
+    </div>
+    <div id="mobile-joystick" class="mobile-joystick" role="application" aria-label="Drive joystick">
+      <div class="mobile-joystick-ring"></div>
+      <div id="mobile-joystick-thumb" class="mobile-joystick-thumb"></div>
+    </div>
+    <button class="mobile-drive-button mobile-brake" type="button" data-rover-key="ShiftLeft" aria-label="Brake">●</button>
+  </div>
 
   <div class="reticle"></div>
   <div class="help" data-i18n="hud.controls">L · C · W/S · A/D · Shift · R · B</div>

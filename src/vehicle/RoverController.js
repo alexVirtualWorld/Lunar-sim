@@ -18,6 +18,7 @@ export class RoverController {
     this.speed = 0;
     this.steer = 0;
     this.keys = new Set();
+    this.virtualKeys = new Set();
     this.inputEnabled = true;
     this.ready = false;
     this.track = 2.8;
@@ -37,7 +38,7 @@ export class RoverController {
     addEventListener('keydown', e => {
       if (this.inputEnabled && !e.target.closest?.('input, textarea, select')) this.keys.add(e.code);
     });
-    addEventListener('blur', () => this.keys.clear());
+    addEventListener('blur', () => this.clearInputs());
     addEventListener('keyup', e => this.keys.delete(e.code));
   }
 
@@ -72,6 +73,25 @@ export class RoverController {
 
   toggleHeadlights() {
     return this.setHeadlights(!this.headlightsOn);
+  }
+
+  setVirtualKey(code, pressed) {
+    if (!code) return;
+    if (pressed) this.virtualKeys.add(code);
+    else this.virtualKeys.delete(code);
+  }
+
+  clearVirtualInputs() {
+    this.virtualKeys.clear();
+  }
+
+  clearInputs() {
+    this.keys.clear();
+    this.virtualKeys.clear();
+  }
+
+  hasInput(code) {
+    return this.keys.has(code) || this.virtualKeys.has(code);
   }
 
   async load() {
@@ -270,9 +290,9 @@ export class RoverController {
     if (!this.ready) return;
     // Photo Mode disables new driving input while physics must keep advancing.
     const acceptInput = this.inputEnabled;
-    const throttle = acceptInput ? (this.keys.has('KeyW') ? 1 : 0) - (this.keys.has('KeyS') ? 1 : 0) : 0;
-    const steerInput = acceptInput ? (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0) : 0;
-    const handbrake = acceptInput && (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'));
+    const throttle = acceptInput ? (this.hasInput('KeyW') ? 1 : 0) - (this.hasInput('KeyS') ? 1 : 0) : 0;
+    const steerInput = acceptInput ? (this.hasInput('KeyD') ? 1 : 0) - (this.hasInput('KeyA') ? 1 : 0) : 0;
+    const handbrake = acceptInput && (this.hasInput('ShiftLeft') || this.hasInput('ShiftRight'));
 
     if (this.grounded) {
       if (throttle !== 0) this.speed += throttle * (throttle > 0 ? this.config.accel : this.config.brake) * dt;

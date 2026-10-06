@@ -52,3 +52,518 @@ body[data-skin="C"] #skin-photo-scroll{
 #browse-panel.is-collapsed .browse-panel-head{
   min-height:22px;
 }
+
+
+/* 2026-10-06: mobile / touch layout and driving controls. */
+@media (max-width:900px), (pointer:coarse){
+  html,body{
+    overscroll-behavior:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  #mobile-ui-toggle{
+    display:inline-flex!important;
+    position:fixed!important;
+    top:calc(10px + env(safe-area-inset-top))!important;
+    right:calc(10px + env(safe-area-inset-right))!important;
+    z-index:60!important;
+    width:42px!important;
+    height:42px!important;
+    min-width:42px!important;
+    padding:0!important;
+    border-radius:10px!important;
+    font-size:20px!important;
+    pointer-events:auto!important;
+  }
+
+  #browse-toggle{
+    top:calc(10px + env(safe-area-inset-top))!important;
+    left:calc(10px + env(safe-area-inset-left))!important;
+    right:auto!important;
+    transform:none!important;
+    max-width:calc(100vw - 82px - env(safe-area-inset-left) - env(safe-area-inset-right))!important;
+    min-height:42px!important;
+    padding:8px 11px!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    font-size:10px!important;
+  }
+
+  #photo-button.skin-top-photo-button{
+    display:none!important;
+  }
+
+  #global-tools{
+    display:none!important;
+  }
+  body.mobile-panels-open #global-tools{
+    display:flex!important;
+    position:fixed!important;
+    left:auto!important;
+    right:calc(10px + env(safe-area-inset-right))!important;
+    top:calc(58px + env(safe-area-inset-top))!important;
+    width:min(350px,calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right)))!important;
+    transform:none!important;
+    flex-wrap:wrap!important;
+    justify-content:flex-end!important;
+    align-items:center!important;
+    padding:8px!important;
+    box-sizing:border-box!important;
+    border:1px solid var(--skin-line)!important;
+    border-radius:var(--skin-radius)!important;
+    background:var(--skin-panel)!important;
+    box-shadow:0 12px 36px rgba(0,0,0,.34)!important;
+    z-index:58!important;
+  }
+  body.mobile-panels-open #skin-control,
+  body.mobile-panels-open #language-control,
+  body.mobile-panels-open #debug-toggle{
+    min-height:38px!important;
+  }
+
+  #hud .top,
+  #hud .help,
+  #hud #site-ref,
+  #hud #players{
+    display:none!important;
+  }
+  #hud .site{
+    left:calc(10px + env(safe-area-inset-left))!important;
+    top:calc(62px + env(safe-area-inset-top))!important;
+    max-width:48vw!important;
+    font-size:9px!important;
+    line-height:1.35!important;
+  }
+  #hud .site .name{
+    font-size:12px!important;
+  }
+  #hud .stats,
+  body[data-skin="B"] #hud .stats{
+    left:auto!important;
+    right:calc(10px + env(safe-area-inset-right))!important;
+    top:calc(58px + env(safe-area-inset-top))!important;
+    bottom:auto!important;
+    padding:0!important;
+    border:0!important;
+    background:transparent!important;
+    text-align:right!important;
+    font-size:9px!important;
+  }
+  #hud .speed{
+    font-size:28px!important;
+  }
+
+  #hud-panels{
+    display:none!important;
+  }
+  body.mobile-panels-open #hud-panels{
+    display:block!important;
+    position:fixed!important;
+    top:calc(112px + env(safe-area-inset-top))!important;
+    right:calc(10px + env(safe-area-inset-right))!important;
+    bottom:calc(10px + env(safe-area-inset-bottom))!important;
+    width:min(330px,calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right)))!important;
+    overflow:auto!important;
+    overscroll-behavior:contain!important;
+    padding:8px!important;
+    box-sizing:border-box!important;
+    border:1px solid var(--skin-line)!important;
+    border-radius:var(--skin-radius)!important;
+    background:color-mix(in srgb,var(--skin-panel) 94%,transparent)!important;
+    box-shadow:0 14px 42px rgba(0,0,0,.4)!important;
+    pointer-events:auto!important;
+    z-index:55!important;
+  }
+  body.mobile-panels-open #hud-panels > #gravity-control,
+  body.mobile-panels-open #hud-panels > #celestial-control,
+  body.mobile-panels-open #hud-panels > #exploration-control,
+  body.mobile-panels-open #hud-panels > #minimap,
+  body[data-skin="B"].mobile-panels-open #hud-panels > #exploration-control,
+  body[data-skin="B"].mobile-panels-open #hud-panels > #minimap{
+    position:relative!important;
+    inset:auto!important;
+    left:auto!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:auto!important;
+    width:auto!important;
+    max-width:none!important;
+    margin:0 0 8px!important;
+    box-sizing:border-box!important;
+  }
+  body.mobile-panels-open #hud-panels > #minimap{
+    margin-bottom:0!important;
+  }
+  body.mobile-panels-open #minimap-canvas{
+    width:100%!important;
+    height:150px!important;
+  }
+
+  #mobile-drive-controls{
+    display:block!important;
+    position:fixed!important;
+    inset:0!important;
+    z-index:45!important;
+    pointer-events:none!important;
+  }
+  #mobile-drive-controls button{
+    pointer-events:auto!important;
+    touch-action:none!important;
+    user-select:none!important;
+    -webkit-user-select:none!important;
+    backdrop-filter:blur(8px)!important;
+    background:color-mix(in srgb,var(--skin-panel) 72%,transparent)!important;
+    border-color:color-mix(in srgb,var(--skin-line) 85%,transparent)!important;
+    box-shadow:0 5px 18px rgba(0,0,0,.28)!important;
+  }
+  #mobile-drive-controls button.is-active{
+    background:var(--skin-accent)!important;
+    color:#10201c!important;
+    border-color:var(--skin-accent)!important;
+    transform:scale(.95);
+  }
+  .mobile-steer-zone{
+    position:absolute;
+    left:calc(16px + env(safe-area-inset-left));
+    bottom:calc(16px + env(safe-area-inset-bottom));
+    display:flex;
+    gap:10px;
+    pointer-events:none;
+  }
+  .mobile-throttle-zone{
+    position:absolute;
+    right:calc(16px + env(safe-area-inset-right));
+    bottom:calc(16px + env(safe-area-inset-bottom));
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    pointer-events:none;
+  }
+  .mobile-drive-button{
+    width:62px!important;
+    height:62px!important;
+    min-width:62px!important;
+    min-height:62px!important;
+    padding:0!important;
+    border-radius:50%!important;
+    font-size:20px!important;
+  }
+  .mobile-brake{
+    position:absolute!important;
+    right:calc(92px + env(safe-area-inset-right))!important;
+    bottom:calc(16px + env(safe-area-inset-bottom))!important;
+    width:54px!important;
+    height:54px!important;
+    min-width:54px!important;
+    min-height:54px!important;
+    font-size:16px!important;
+  }
+  .mobile-drive-actions{
+    position:absolute;
+    left:calc(16px + env(safe-area-inset-left));
+    bottom:calc(92px + env(safe-area-inset-bottom));
+    display:flex;
+    gap:8px;
+    pointer-events:none;
+  }
+  .mobile-drive-actions button{
+    width:42px!important;
+    height:42px!important;
+    min-width:42px!important;
+    min-height:42px!important;
+    padding:0!important;
+    border-radius:50%!important;
+    font-size:17px!important;
+  }
+
+  body.mobile-panels-open #mobile-drive-controls{
+    opacity:.24;
+  }
+  body.mobile-panels-open #mobile-drive-controls button{
+    pointer-events:none!important;
+  }
+
+  #browse-panel.is-collapsed,
+  body[data-skin="B"] #browse-panel.is-collapsed,
+  body[data-skin="C"] #browse-panel.is-collapsed{
+    left:calc(10px + env(safe-area-inset-left))!important;
+    right:auto!important;
+    bottom:calc(10px + env(safe-area-inset-bottom))!important;
+    width:min(390px,calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right)))!important;
+    max-width:none!important;
+    padding:10px 12px!important;
+  }
+  #browse-panel:not(.is-collapsed),
+  body[data-skin="B"] #browse-panel:not(.is-collapsed),
+  body[data-skin="C"] #browse-panel:not(.is-collapsed){
+    left:calc(10px + env(safe-area-inset-left))!important;
+    right:auto!important;
+    top:calc(62px + env(safe-area-inset-top))!important;
+    bottom:calc(10px + env(safe-area-inset-bottom))!important;
+    width:min(420px,calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right)))!important;
+    max-width:none!important;
+    max-height:calc(100dvh - 82px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+    padding:14px!important;
+    overflow:auto!important;
+    box-sizing:border-box!important;
+  }
+  #browse-panel .browse-panel-head{
+    margin-bottom:8px!important;
+  }
+  #browse-panel .browse-panel-head h1{
+    font-size:16px!important;
+  }
+  #browse-panel.is-collapsed .browse-panel-collapse{
+    min-height:28px!important;
+  }
+  #browse-panel.is-collapsed > #selected-coords{
+    font-size:13px!important;
+    margin:2px 0 7px!important;
+  }
+  #browse-panel.is-collapsed > .browse-actions button{
+    min-height:40px!important;
+    padding:7px 10px!important;
+  }
+
+  #photo-mode,
+  body[data-skin="B"] #photo-mode,
+  body[data-skin="C"] #photo-mode{
+    inset:calc(58px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left))!important;
+    width:auto!important;
+    max-width:none!important;
+    max-height:none!important;
+  }
+  #skin-photo-scroll,
+  body[data-skin="B"] #skin-photo-scroll,
+  body[data-skin="C"] #skin-photo-scroll{
+    max-height:none!important;
+  }
+
+  .photo-clean-view #mobile-ui-toggle,
+  .photo-clean-view #mobile-drive-controls{
+    display:none!important;
+  }
+}
+
+@media (max-width:520px) and (orientation:portrait){
+  .mobile-drive-button{
+    width:58px!important;
+    height:58px!important;
+    min-width:58px!important;
+    min-height:58px!important;
+  }
+  .mobile-brake{
+    right:calc(84px + env(safe-area-inset-right))!important;
+  }
+  #hud .site{
+    max-width:58vw!important;
+  }
+}
+
+
+/* 2026-10-06 mobile pass 2: keep the Moon/drive view visible. */
+@media (max-width:900px), (pointer:coarse){
+  #browse-panel.is-collapsed,
+  body[data-skin="B"] #browse-panel.is-collapsed,
+  body[data-skin="C"] #browse-panel.is-collapsed{
+    width:min(230px,calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right)))!important;
+    max-width:230px!important;
+    padding:8px 10px!important;
+  }
+  #browse-panel.is-collapsed .browse-panel-head{margin-bottom:5px!important}
+  #browse-panel.is-collapsed .browse-panel-collapse{min-height:24px!important;padding:1px 0!important;font-size:10px!important}
+  #browse-panel.is-collapsed > #selected-coords{font-size:11px!important;margin:0 0 5px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  #browse-panel.is-collapsed > .browse-actions button{min-height:34px!important;padding:5px 8px!important;font-size:10px!important}
+
+  body.mobile-panels-open #global-tools{height:46px!important;min-height:46px!important;flex-wrap:nowrap!important;justify-content:stretch!important;gap:5px!important;padding:5px!important;overflow:hidden!important}
+  body.mobile-panels-open #skin-control,
+  body.mobile-panels-open #language-control,
+  body.mobile-panels-open #debug-toggle{height:34px!important;min-height:34px!important;min-width:0!important;margin:0!important;padding:0 5px!important;font-size:9px!important}
+  body.mobile-panels-open #skin-control{flex:1.35 1 0!important}
+  body.mobile-panels-open #language-control{flex:1 1 0!important}
+  body.mobile-panels-open #debug-toggle{flex:.75 1 0!important}
+  body.mobile-panels-open #skin-control>span:not(.skin-icon),
+  body.mobile-panels-open #language-control>span{display:none!important}
+  body.mobile-panels-open #skin-select,
+  body.mobile-panels-open #language-select{min-width:0!important;width:100%!important;max-width:100%!important;padding:3px!important;font-size:9px!important}
+  body.mobile-panels-open #hud-panels{top:calc(112px + env(safe-area-inset-top))!important}
+
+  #hud > #minimap,
+  body[data-skin="B"] #hud > #minimap,
+  body[data-skin="C"] #hud > #minimap{
+    display:block!important;position:absolute!important;left:auto!important;
+    right:calc(10px + env(safe-area-inset-right))!important;
+    top:calc(116px + env(safe-area-inset-top))!important;bottom:auto!important;
+    width:138px!important;max-width:138px!important;padding:6px!important;margin:0!important;
+    box-sizing:border-box!important;z-index:18!important;pointer-events:auto!important
+  }
+  #hud > #minimap #minimap-canvas{width:124px!important;height:92px!important}
+  #hud > #minimap .minimap-head{margin-bottom:4px!important}
+  #hud > #minimap .minimap-title{font-size:8px!important}
+  #hud > #minimap .minimap-tools button{width:21px!important;height:20px!important;min-width:21px!important;min-height:20px!important;font-size:10px!important}
+  #hud > #minimap #minimap-coords{margin-top:3px!important;font-size:8px!important}
+  #hud > #minimap #minimap-telemetry{display:none!important}
+  #hud > #minimap #minimap-scale-label{font-size:8px!important}
+  body.mobile-panels-open #hud > #minimap{opacity:.25!important;pointer-events:none!important}
+
+  #photo-mode,
+  body[data-skin="B"] #photo-mode,
+  body[data-skin="C"] #photo-mode{
+    left:auto!important;right:calc(8px + env(safe-area-inset-right))!important;
+    top:calc(58px + env(safe-area-inset-top))!important;
+    bottom:calc(8px + env(safe-area-inset-bottom))!important;
+    width:min(310px,42vw)!important;max-width:310px!important;max-height:none!important
+  }
+  #photo-mode .photo-head{padding:10px 12px 7px!important}
+  #photo-mode .photo-title{font-size:14px!important}
+  #skin-photo-modebar{padding:0 12px 8px!important}
+  #skin-photo-scroll{padding:0 12px 12px!important}
+}
+
+@media (max-width:600px) and (orientation:portrait){
+  #photo-mode,
+  body[data-skin="B"] #photo-mode,
+  body[data-skin="C"] #photo-mode{
+    left:calc(8px + env(safe-area-inset-left))!important;
+    right:calc(8px + env(safe-area-inset-right))!important;
+    width:auto!important;max-width:none!important
+  }
+}
+
+
+/* 2026-10-06 mobile drive pass 3: combine throttle + steering into one joystick. */
+@media (max-width:900px), (pointer:coarse){
+  .mobile-steer-zone,
+  .mobile-throttle-zone{
+    display:none!important;
+  }
+
+  .mobile-joystick{
+    position:absolute;
+    left:calc(18px + env(safe-area-inset-left));
+    bottom:calc(18px + env(safe-area-inset-bottom));
+    width:132px;
+    height:132px;
+    border-radius:50%;
+    pointer-events:auto;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+    background:color-mix(in srgb,var(--skin-panel) 32%,transparent);
+    border:1px solid color-mix(in srgb,var(--skin-line) 70%,transparent);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.035),0 8px 24px rgba(0,0,0,.22);
+    backdrop-filter:blur(5px);
+  }
+  .mobile-joystick::before,
+  .mobile-joystick::after{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:50%;
+    pointer-events:none;
+    opacity:.34;
+    background:var(--skin-muted);
+  }
+  .mobile-joystick::before{
+    width:1px;
+    height:62%;
+    transform:translate(-.5px,-50%);
+  }
+  .mobile-joystick::after{
+    width:62%;
+    height:1px;
+    transform:translate(-50%,-.5px);
+  }
+  .mobile-joystick-ring{
+    position:absolute;
+    inset:27px;
+    border:1px solid color-mix(in srgb,var(--skin-line) 70%,transparent);
+    border-radius:50%;
+    pointer-events:none;
+  }
+  .mobile-joystick-thumb{
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:54px;
+    height:54px;
+    margin:-27px 0 0 -27px;
+    border-radius:50%;
+    background:color-mix(in srgb,var(--skin-panel) 84%,transparent);
+    border:1px solid color-mix(in srgb,var(--skin-line) 88%,transparent);
+    box-shadow:0 5px 16px rgba(0,0,0,.3),inset 0 0 0 1px rgba(255,255,255,.035);
+    transition:transform .08s ease-out,background .12s ease,border-color .12s ease;
+    pointer-events:none;
+  }
+  .mobile-joystick.is-active .mobile-joystick-thumb{
+    transition:none;
+    background:color-mix(in srgb,var(--skin-accent) 75%,var(--skin-panel));
+    border-color:var(--skin-accent);
+  }
+
+  .mobile-drive-actions{
+    left:calc(18px + env(safe-area-inset-left))!important;
+    bottom:calc(160px + env(safe-area-inset-bottom))!important;
+    width:132px;
+    justify-content:center;
+    gap:7px!important;
+  }
+
+  .mobile-brake{
+    right:calc(18px + env(safe-area-inset-right))!important;
+    bottom:calc(18px + env(safe-area-inset-bottom))!important;
+    width:62px!important;
+    height:62px!important;
+    min-width:62px!important;
+    min-height:62px!important;
+  }
+
+  body.mobile-panels-open .mobile-joystick{
+    opacity:.24;
+    pointer-events:none;
+  }
+}
+
+@media (max-width:520px) and (orientation:portrait){
+  .mobile-joystick{
+    width:118px;
+    height:118px;
+  }
+  .mobile-joystick-ring{inset:24px}
+  .mobile-joystick-thumb{
+    width:50px;
+    height:50px;
+    margin:-25px 0 0 -25px;
+  }
+  .mobile-drive-actions{
+    width:118px;
+    bottom:calc(146px + env(safe-area-inset-bottom))!important;
+  }
+}
+
+
+/* 2026-10-06 mobile drive pass 4: move brake beside joystick, keep map area clear. */
+@media (max-width:900px), (pointer:coarse){
+  .mobile-brake{
+    left:calc(154px + env(safe-area-inset-left))!important;
+    right:auto!important;
+    bottom:calc(92px + env(safe-area-inset-bottom))!important;
+    width:58px!important;
+    height:58px!important;
+    min-width:58px!important;
+    min-height:58px!important;
+  }
+}
+
+@media (max-width:520px) and (orientation:portrait){
+  .mobile-brake{
+    left:calc(140px + env(safe-area-inset-left))!important;
+    right:auto!important;
+    bottom:calc(82px + env(safe-area-inset-bottom))!important;
+    width:54px!important;
+    height:54px!important;
+    min-width:54px!important;
+    min-height:54px!important;
+  }
+}

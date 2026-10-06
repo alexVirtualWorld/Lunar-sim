@@ -111,7 +111,11 @@ const ui = {
   debugOrigin: document.querySelector('#debug-origin'),
   debugRover: document.querySelector('#debug-rover'),
   debugPolar: document.querySelector('#debug-polar'),
-  debugCache: document.querySelector('#debug-cache')
+  debugCache: document.querySelector('#debug-cache'),
+  mobileUiToggle: document.querySelector('#mobile-ui-toggle'),
+  mobileHeadlights: document.querySelector('#mobile-headlights'),
+  mobileCenter: document.querySelector('#mobile-center'),
+  mobilePhoto: document.querySelector('#mobile-photo')
 };
 
 initLanguage();
@@ -366,6 +370,141 @@ setHeadlights(rover.headlightsOn);
 updateExplorationUI();
 
 
+function setMobilePanelsOpen(open) {
+  const value = !!open;
+  document.body.classList.toggle('mobile-panels-open', value);
+  ui.mobileUiToggle?.setAttribute('aria-expanded', String(value));
+}
+
+const mobileJoystick = document.querySelector('#mobile-joystick');
+const mobileJoystickThumb = document.querySelector('#mobile-joystick-thumb');
+const mobileJoystickKeys = new Set();
+let mobileJoystickPointer = null;
+
+function setMobileJoystickKeys(nextKeys) {
+  for (const code of mobileJoystickKeys) {
+    if (!nextKeys.has(code)) rover.setVirtualKey?.(code, false);
+  }
+  for (const code of nextKeys) {
+    if (!mobileJoystickKeys.has(code)) rover.setVirtualKey?.(code, true);
+  }
+  mobileJoystickKeys.clear();
+  nextKeys.forEach(code => mobileJoystickKeys.add(code));
+}
+
+function resetMobileJoystick() {
+  setMobileJoystickKeys(new Set());
+  mobileJoystickPointer = null;
+  if (mobileJoystickThumb) mobileJoystickThumb.style.transform = 'translate(0px, 0px)';
+  mobileJoystick?.classList.remove('is-active');
+}
+
+function updateMobileJoystick(clientX, clientY) {
+  if (!mobileJoystick || !mobileJoystickThumb) return;
+  const rect = mobileJoystick.getBoundingClientRect();
+  const cx = rect.left + rect.width * 0.5;
+  const cy = rect.top + rect.height * 0.5;
+  const maxRadius = Math.max(1, Math.min(rect.width, rect.height) * 0.30);
+  let dx = clientX - cx;
+  let dy = clientY - cy;
+  const distance = Math.hypot(dx, dy);
+  if (distance > maxRadius) {
+    const scale = maxRadius / distance;
+    dx *= scale;
+    dy *= scale;
+  }
+
+  mobileJoystickThumb.style.transform = 'translate(' + dx.toFixed(1) + 'px, ' + dy.toFixed(1) + 'px)';
+
+  const x = dx / maxRadius;
+  const y = dy / maxRadius;
+  const deadZone = 0.28;
+  const nextKeys = new Set();
+  if (y < -deadZone) nextKeys.add('KeyW');
+  if (y > deadZone) nextKeys.add('KeyS');
+  if (x < -deadZone) nextKeys.add('KeyA');
+  if (x > deadZone) nextKeys.add('KeyD');
+  setMobileJoystickKeys(nextKeys);
+}
+
+function clearMobileDriveButtons() {
+  rover.clearVirtualInputs?.();
+  mobileJoystickKeys.clear();
+  resetMobileJoystick();
+  document.querySelectorAll('[data-rover-key].is-active').forEach(button => button.classList.remove('is-active'));
+}
+
+ui.mobileUiToggle?.addEventListener('click', event => {
+  event.preventDefault();
+  event.stopPropagation();
+  setMobilePanelsOpen(!document.body.classList.contains('mobile-panels-open'));
+});
+
+ui.mobileHeadlights?.addEventListener('click', event => {
+  event.preventDefault();
+  toggleHeadlights();
+});
+ui.mobileCenter?.addEventListener('click', event => {
+  event.preventDefault();
+  roverCamera.recenter();
+});
+ui.mobilePhoto?.addEventListener('click', event => {
+  event.preventDefault();
+  togglePhotoMode();
+});
+
+mobileJoystick?.addEventListener('pointerdown', event => {
+  if (mode !== 'drive' || switching || photoMode?.active) return;
+  event.preventDefault();
+  event.stopPropagation();
+  mobileJoystickPointer = event.pointerId;
+  mobileJoystick.setPointerCapture?.(event.pointerId);
+  mobileJoystick.classList.add('is-active');
+  updateMobileJoystick(event.clientX, event.clientY);
+});
+mobileJoystick?.addEventListener('pointermove', event => {
+  if (event.pointerId !== mobileJoystickPointer) return;
+  event.preventDefault();
+  event.stopPropagation();
+  updateMobileJoystick(event.clientX, event.clientY);
+});
+const releaseMobileJoystick = event => {
+  if (mobileJoystickPointer != null && event?.pointerId != null && event.pointerId !== mobileJoystickPointer) return;
+  resetMobileJoystick();
+};
+mobileJoystick?.addEventListener('pointerup', releaseMobileJoystick);
+mobileJoystick?.addEventListener('pointercancel', releaseMobileJoystick);
+mobileJoystick?.addEventListener('lostpointercapture', releaseMobileJoystick);
+mobileJoystick?.addEventListener('contextmenu', event => event.preventDefault());
+
+document.querySelectorAll('[data-rover-key]').forEach(button => {
+  const code = button.dataset.roverKey;
+  let activePointer = null;
+
+  const release = event => {
+    if (activePointer != null && event?.pointerId != null && event.pointerId !== activePointer) return;
+    rover.setVirtualKey?.(code, false);
+    button.classList.remove('is-active');
+    activePointer = null;
+  };
+
+  button.addEventListener('pointerdown', event => {
+    if (mode !== 'drive' || switching || photoMode?.active) return;
+    event.preventDefault();
+    event.stopPropagation();
+    activePointer = event.pointerId;
+    button.setPointerCapture?.(event.pointerId);
+    rover.setVirtualKey?.(code, true);
+    button.classList.add('is-active');
+  });
+  button.addEventListener('pointerup', release);
+  button.addEventListener('pointercancel', release);
+  button.addEventListener('lostpointercapture', release);
+  button.addEventListener('contextmenu', event => event.preventDefault());
+});
+addEventListener('blur', clearMobileDriveButtons);
+
+
 let multiplayer = null;
 let miniMap = null;
 let photoMode = null;
@@ -509,7 +648,9 @@ function setMode(next) {
   if (next === 'drive' && !driveReady) return;
   if (photoMode?.active) photoMode.exit();
   mode = next;
-  rover.keys.clear();
+  rover.clearInputs?.();
+  clearMobileDriveButtons();
+  setMobilePanelsOpen(false);
   rover.speed = 0;
   rover.inputEnabled = next === 'drive' && !switching;
   roverCamera.enabled = next === 'drive' && !switching;
@@ -731,7 +872,8 @@ function ensurePhotoMode() {
         setDate: date => setCelestialDate(date),
         isNetworked: () => Boolean(multiplayer?.socket?.connected),
         onActiveChange: active => {
-          rover.keys.clear();
+          rover.clearInputs?.();
+          clearMobileDriveButtons();
           rover.inputEnabled = mode === 'drive' && !switching && !active;
           roverCamera.enabled = mode === 'drive' && !switching && !active;
           roverCamera.drag = false;

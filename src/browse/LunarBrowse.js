@@ -90,6 +90,12 @@ export class LunarBrowse {
     this.controls.maxDistance = 650;
     this.controls.maxTargetRadius = 75;
     this.controls.enableDamping = false; // A click must match the globe actually displayed.
+    if (matchMedia?.('(pointer: coarse)').matches) {
+      this.controls.enablePan = false;
+      this.controls.touches.ONE = THREE.TOUCH.ROTATE;
+      this.controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+      this.controls.target.set(0, 0, 0);
+    }
     this.loader = new GlobalHeightTileLoader({ maxPackCache: 32, maxTileCache: 640 });
     this.onStatus = onStatus;
     this.onSelect = onSelect;
