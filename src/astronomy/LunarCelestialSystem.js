@@ -15,6 +15,12 @@ const EARTH_RADIUS_KM = 6378.137;
 const SUN_RADIUS_KM = 695700;
 const MOON_RADIUS_KM = 1737.4;
 
+// Visual calibration based on the user's reference moon photo.
+// These multipliers affect apparent disc size only; astronomical direction,
+// distance, phase and lighting calculations remain physically derived.
+const EARTH_VISUAL_SCALE = 9.05;
+const SUN_VISUAL_SCALE = 7.0;
+
 function mod360(x) {
   return ((x % 360) + 360) % 360;
 }
@@ -397,13 +403,13 @@ export class LunarCelestialSystem {
       const earthDistance = 30000;
       const earthRadius = Math.tan(this.current.earth.angularDiameterDeg * DEG * 0.5) * earthDistance;
       this.earthGroup.position.copy(targetPosition).addScaledVector(this.current.earth.world, earthDistance);
-      this.earthGroup.scale.setScalar(Math.max(1, earthRadius));
+      this.earthGroup.scale.setScalar(Math.max(1, earthRadius * EARTH_VISUAL_SCALE));
       this.earthGroup.quaternion.setFromRotationMatrix(this.current.earthRotation);
 
       const sunDistance = 40000;
       const sunDiameter = 2 * Math.tan(this.current.sun.angularDiameterDeg * DEG * 0.5) * sunDistance;
       this.sunSprite.position.copy(targetPosition).addScaledVector(this.current.sun.world, sunDistance);
-      this.sunSprite.scale.setScalar(Math.max(20, sunDiameter));
+      this.sunSprite.scale.setScalar(Math.max(20, sunDiameter * SUN_VISUAL_SCALE));
 
       this.starGroup.quaternion.setFromRotationMatrix(this.current.starRotation);
     }
