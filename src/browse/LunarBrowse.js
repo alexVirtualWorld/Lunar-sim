@@ -90,7 +90,8 @@ export class LunarBrowse {
     this.controls.maxDistance = 650;
     this.controls.maxTargetRadius = 75;
     this.controls.enableDamping = false; // A click must match the globe actually displayed.
-    if (matchMedia?.('(pointer: coarse)').matches) {
+    this.mobileTouchControls = matchMedia?.('(pointer: coarse)').matches ?? false;
+    if (this.mobileTouchControls) {
       this.controls.enablePan = false;
       this.controls.touches.ONE = THREE.TOUCH.ROTATE;
       // Two-finger gesture should zoom only. DOLLY_PAN + enablePan=false
@@ -898,6 +899,17 @@ export class LunarBrowse {
   }
 
   render(renderer) {
+    if (this.mobileTouchControls) {
+      // Keep the current whole-globe feel when zoomed out, but progressively
+      // reduce one-finger rotation as the camera approaches the lunar surface.
+      // Screen-space motion grows dramatically near the surface even when the
+      // angular OrbitControls delta is unchanged.
+      const distance = this.camera.position.length();
+      const referenceGap = 310 - RADIUS;
+      const surfaceGap = Math.max(0, distance - RADIUS);
+      const normalizedGap = THREE.MathUtils.clamp(surfaceGap / referenceGap, 0, 1);
+      this.controls.rotateSpeed = THREE.MathUtils.clamp(Math.sqrt(normalizedGap), 0.12, 1.0);
+    }
     this.controls.update();
     if (this.camera.position.length() < RADIUS + 3) {
       this.camera.position.setLength(RADIUS + 3);
