@@ -93,7 +93,9 @@ export class LunarBrowse {
     if (matchMedia?.('(pointer: coarse)').matches) {
       this.controls.enablePan = false;
       this.controls.touches.ONE = THREE.TOUCH.ROTATE;
-      this.controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+      // Two-finger gesture should zoom only. DOLLY_PAN + enablePan=false
+      // keeps OrbitControls' dolly handling while suppressing both pan and rotate.
+      this.controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
       this.controls.target.set(0, 0, 0);
     }
     this.loader = new GlobalHeightTileLoader({ maxPackCache: 32, maxTileCache: 640 });

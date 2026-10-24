@@ -174,7 +174,30 @@ export class RoverController {
     const basis = new THREE.Matrix4().makeBasis(rightOnPlane, normal, zAxis);
     const targetQ = new THREE.Quaternion().setFromRotationMatrix(basis);
 
-    const groundY = C.h + this.config.bodyClearance;
+    // The attitude plane comes from L/R/F/B, but uneven or convex terrain can
+    // still place one of the six wheel contact points above that plane. If the
+    // chassis center follows only C.h, the uphill side can then clip through
+    // the rendered ground. Compute the minimum vertical lift required for the
+    // oriented support plane to clear every wheel contact point.
+    const supportOffsets = [
+      [-halfTrack, halfBase], [-halfTrack, 0], [-halfTrack, -halfBase],
+      [ halfTrack, halfBase], [ halfTrack, 0], [ halfTrack, -halfBase]
+    ];
+    let supportLift = 0;
+    const normalY = Math.max(0.05, normal.y);
+    for (const [rightM, forwardM] of supportOffsets) {
+      const W = this.groundAt(rightM, forwardM);
+      if (W.h == null) continue;
+
+      const dx = W.east - this.east;
+      const dz = -(W.north - this.north);
+      const planeY = C.h - (normal.x * dx + normal.z * dz) / normalY;
+      supportLift = Math.max(supportLift, W.h - planeY);
+    }
+
+    // Keep the configured clearance above the support envelope. On a perfectly
+    // planar slope supportLift is ~0, so normal slope driving does not float.
+    const groundY = C.h + Math.max(0, supportLift) + this.config.bodyClearance;
     if (this.bodyY == null || !Number.isFinite(this.bodyY)) {
       this.bodyY = groundY;
       this.lastGroundY = groundY;
