@@ -10,6 +10,15 @@ const RADIUS = 100;
 // Continuous U coordinates are intentional: RepeatWrapping bridges ±180°.
 export function albedoUV(lat, lon) { return [(lon + 180) / 360, (lat + 90) / 180]; }
 export function overviewLod(distance) { return distance < 180 ? 2 : distance < 270 ? 1 : 0; }
+export function localRefinementLod(distance, mobile = false) {
+  if (distance >= 165) return -1;
+  if (distance >= 138) return 3;
+  if (distance >= 120) return 4;
+  if (distance >= 110) return 5;
+  if (distance >= 105) return 6;
+  if (distance >= 103.8) return 7;
+  return mobile ? 7 : 8;
+}
 export function globePoint(lat, lon, radius = RADIUS) {
   const p = THREE.MathUtils.degToRad(lat), l = THREE.MathUtils.degToRad(lon);
   return new THREE.Vector3(radius * Math.cos(p) * Math.cos(l), radius * Math.sin(p), -radius * Math.cos(p) * Math.sin(l));
@@ -108,6 +117,41 @@ export class LunarBrowse {
     this.raycaster.params.Points.threshold = 1.4;
     this.renderer = renderer;
     this.material = new THREE.MeshBasicMaterial({ color: 0x68717b, toneMapped: false, side: THREE.DoubleSide });
+    this.refinementMaterial = this.material.clone();
+    this.refinementMaterial.polygonOffset = true;
+    this.refinementMaterial.polygonOffsetFactor = -1;
+    this.refinementMaterial.polygonOffsetUnits = -1;
+    this.refinement = new THREE.Group();
+    this.refinement.name = 'BROWSE_LOCAL_REAL_DEM_REFINEMENT';
+    this.scene.add(this.refinement);
+    this.refinementKey = '';
+    this.refinementPending = null;
+    this.refinementGeneration = 0;
+
+    // Near-surface Browse raster, derived only from real DEM heights.
+    // Reuses the driving minimap technique: sample heights into a small canvas,
+    // normalize local min/max, then upscale the raster.
+    this.localRasterMode = false;
+    this.localRasterEnterDistance = 115;
+    this.localRasterExitDistance = 120;
+    this.localRasterCanvas = document.createElement('canvas');
+    this.localRasterCanvas.width = 256;
+    this.localRasterCanvas.height = 144;
+    this.localRasterCanvas.style.position = 'fixed';
+    this.localRasterCanvas.style.inset = '0';
+    this.localRasterCanvas.style.width = '100vw';
+    this.localRasterCanvas.style.height = '100vh';
+    this.localRasterCanvas.style.pointerEvents = 'none';
+    this.localRasterCanvas.style.zIndex = '2';
+    this.localRasterCanvas.style.display = 'none';
+    this.localRasterCanvas.style.imageRendering = 'auto';
+    this.localRasterCtx = this.localRasterCanvas.getContext('2d', { alpha: false });
+    document.body.appendChild(this.localRasterCanvas);
+    this.localRasterPending = null;
+    this.localRasterKey = '';
+    this.localRasterLastAt = 0;
+    this.localRasterView = null;
+    this.localRasterMaxTiles = this.mobileTouchControls ? 72 : 112;
     // The image-only sphere/caps supply geographic context, never drive heights.
     this.sphere = new THREE.Mesh(new THREE.SphereGeometry(RADIUS - 1, 256, 128), this.material);
     this.scene.add(this.sphere);
@@ -465,13 +509,27 @@ export class LunarBrowse {
       else if (feature.explore) label.classList.add('explorable');
       label.textContent = feature.name;
       label.hidden = true;
+
+      const dot = document.createElement('span');
+      dot.className = 'browse-place-raster-dot';
+      dot.style.position = 'fixed';
+      dot.style.width = '7px';
+      dot.style.height = '7px';
+      dot.style.borderRadius = '50%';
+      dot.style.background = '#ffd686';
+      dot.style.boxShadow = '0 0 0 1px rgba(0,0,0,.9), 0 0 4px rgba(255,214,134,.65)';
+      dot.style.pointerEvents = 'none';
+      dot.style.zIndex = '3';
+      dot.hidden = true;
+
       label.addEventListener('click', event => {
         event.preventDefault();
         event.stopPropagation();
         this.selectFeature(feature, event.clientX, event.clientY);
       });
+      this.placeLabelLayer.appendChild(dot);
       this.placeLabelLayer.appendChild(label);
-      this.placeLabelElements.set(Number(feature.id), { label, feature });
+      this.placeLabelElements.set(Number(feature.id), { label, dot, feature });
     }
   }
 
@@ -483,7 +541,10 @@ export class LunarBrowse {
     const layer = this.placeLabelLayer;
     const tier = mapPlaceTier(this.camera.position.length());
     if (!this.active || tier < 0 || this.mapPlacesMode === 'off' || !this.nomenclatureCatalog) {
-      for (const entry of this.placeLabelElements.values()) entry.label.hidden = true;
+      for (const entry of this.placeLabelElements.values()) {
+      entry.label.hidden = true;
+      if (entry.dot) entry.dot.hidden = true;
+    }
       layer.hidden = true;
       return;
     }
@@ -492,7 +553,10 @@ export class LunarBrowse {
     const candidates = this.visibleFeaturesForTier(tier);
     this.rebuildStableLabelElements(candidates, tier);
 
-    for (const entry of this.placeLabelElements.values()) entry.label.hidden = true;
+    for (const entry of this.placeLabelElements.values()) {
+      entry.label.hidden = true;
+      if (entry.dot) entry.dot.hidden = true;
+    }
 
     const rect = this.renderer.domElement.getBoundingClientRect();
     const budget = labelBudgetForTier(tier);
@@ -505,15 +569,30 @@ export class LunarBrowse {
       const entry = this.placeLabelElements.get(Number(feature.id));
       if (!entry) continue;
 
-      const world = globePoint(feature.lat, feature.lon, 101.35);
-      cameraToWorld.copy(this.camera.position).sub(world);
-      if (world.dot(cameraToWorld) <= 0) continue;
+      let pointX, pointY;
+      if (this.localRasterMode && this.localRasterView) {
+        // Local DEM is an equirectangular raster centered on the current view.
+        // Project places with the exact same center/span used to draw that raster.
+        const view = this.localRasterView;
+        let dLon = normalizeLon360(feature.lon) - view.centerLon;
+        if (dLon > 180) dLon -= 360;
+        else if (dLon < -180) dLon += 360;
+        const nx = 0.5 + dLon / view.lonSpan;
+        const ny = 0.5 - (feature.lat - view.centerLat) / view.latSpan;
+        if (nx < -0.04 || nx > 1.04 || ny < -0.04 || ny > 1.04) continue;
+        pointX = rect.left + nx * rect.width;
+        pointY = rect.top + ny * rect.height;
+      } else {
+        const world = globePoint(feature.lat, feature.lon, 101.35);
+        cameraToWorld.copy(this.camera.position).sub(world);
+        if (world.dot(cameraToWorld) <= 0) continue;
 
-      const projected = world.clone().project(this.camera);
-      if (projected.z < -1 || projected.z > 1 || projected.x < -1.04 || projected.x > 1.04 || projected.y < -1.04 || projected.y > 1.04) continue;
+        const projected = world.clone().project(this.camera);
+        if (projected.z < -1 || projected.z > 1 || projected.x < -1.04 || projected.x > 1.04 || projected.y < -1.04 || projected.y > 1.04) continue;
 
-      const pointX = rect.left + (projected.x * 0.5 + 0.5) * rect.width;
-      const pointY = rect.top + (1 - (projected.y * 0.5 + 0.5)) * rect.height;
+        pointX = rect.left + (projected.x * 0.5 + 0.5) * rect.width;
+        pointY = rect.top + (1 - (projected.y * 0.5 + 0.5)) * rect.height;
+      }
       const x = pointX + 9;
       const y = pointY - 8;
       const width = Math.max(44, Math.min(180, feature.name.length * 7.1 + 10));
@@ -525,6 +604,11 @@ export class LunarBrowse {
       label.style.left = x + 'px';
       label.style.top = y + 'px';
       label.hidden = false;
+      if (entry.dot) {
+        entry.dot.style.left = (pointX - 3.5) + 'px';
+        entry.dot.style.top = (pointY - 3.5) + 'px';
+        entry.dot.hidden = !this.localRasterMode || this.mapPlacesMode !== 'all';
+      }
       shown++;
     }
   }
@@ -550,7 +634,11 @@ export class LunarBrowse {
     body.className = 'feature-popup-body';
     const lines = [
       t('popup.featureType') + ': ' + feature.type,
-      t('popup.location') + ': ' + feature.lat.toFixed(2) + '° ' + (feature.lat >= 0 ? 'N' : 'S') + ' / ' + feature.lon.toFixed(2) + '° E',
+      t('popup.location') + ': ' +
+        Math.abs(feature.lat).toFixed(2) + '° ' + (feature.lat >= 0 ? 'N' : 'S') + ' / ' +
+        (normalizeLon360(feature.lon) <= 180
+          ? normalizeLon360(feature.lon).toFixed(2) + '° E'
+          : (360 - normalizeLon360(feature.lon)).toFixed(2) + '° W'),
       t('popup.size') + ': ' + Number(feature.diameterKm || 0).toFixed(2) + ' km',
       feature.approvalDate ? t('popup.approved') + ': ' + feature.approvalDate.slice(0,4) : '',
       feature.origin ? t('popup.origin') + ': ' + feature.origin : ''
@@ -718,10 +806,14 @@ export class LunarBrowse {
     this.active = active;
     this.controls.enabled = active && !this.busy;
     if (!active) {
+      this.setLocalRasterMode(false);
       this.roverHud.hidden = true;
       this.roverHudSvg.style.display = 'none';
       this.hideFeaturePopup();
-      for (const entry of this.placeLabelElements.values()) entry.label.hidden = true;
+      for (const entry of this.placeLabelElements.values()) {
+      entry.label.hidden = true;
+      if (entry.dot) entry.dot.hidden = true;
+    }
       this.placeLabelLayer.hidden = true;
       if (this.nomenclaturePoints) this.nomenclaturePoints.visible = false;
     } else {
@@ -771,8 +863,11 @@ export class LunarBrowse {
         texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
         const old = this.material.map;
         this.material.map = texture;
+        this.refinementMaterial.map = texture;
         this.material.color.set(0xffffff);
+        this.refinementMaterial.color.set(0xffffff);
         this.material.needsUpdate = true;
+        this.refinementMaterial.needsUpdate = true;
         old?.dispose();
         this.imageStatus = `NASA / LROC imagery ${width / 1024}K`;
         this.status();
@@ -781,6 +876,206 @@ export class LunarBrowse {
         this.imageStatus = this.material.map ? `${this.imageStatus} (higher resolution unavailable)` : 'Browse imagery unavailable';
         this.status();
       }
+    }
+  }
+
+  localRasterSpanDeg(distance) {
+    if (distance >= 115) return 18;
+    if (distance >= 110) return 12;
+    if (distance >= 106) return 8;
+    if (distance >= 104) return 5;
+    return 3.5;
+  }
+
+  setLocalRasterMode(enabled) {
+    if (this.localRasterMode === enabled) return;
+    this.localRasterMode = enabled;
+    this.localRasterCanvas.style.display = enabled ? 'block' : 'none';
+    this.localRasterKey = '';
+    if (!enabled) this.localRasterView = null;
+    this.status();
+  }
+
+  async preloadLocalRasterTiles(centerGeo, distance, requestedLod) {
+    await this.loader.loadIndex();
+    const aspect = Math.max(1, innerWidth) / Math.max(1, innerHeight);
+    const latSpan = this.localRasterSpanDeg(distance);
+    const cosLat = Math.max(0.2, Math.cos(THREE.MathUtils.degToRad(centerGeo.lat)));
+    const lonSpan = Math.min(80, latSpan * aspect / cosLat);
+
+    let lod = requestedLod;
+    while (lod >= 0) {
+      const requests = new Map();
+      const blocks = new Map();
+      for (let gy = 0; gy <= 10; gy++) {
+        const lat = THREE.MathUtils.clamp(
+          centerGeo.lat + latSpan * (0.5 - gy / 10),
+          -89.9999, 89.9999
+        );
+        for (let gx = 0; gx <= 18; gx++) {
+          const lon = normalizeLon360(centerGeo.lon + lonSpan * (gx / 18 - 0.5));
+          const meta = this.loader.blockForGeo(lat, lon);
+          if (!meta) continue;
+          let block = blocks.get(meta.id);
+          if (!block) {
+            block = await this.loader.loadBlock(meta.id);
+            blocks.set(meta.id, block);
+          }
+          const targetLod = Math.min(lod, block.maxLod);
+          const idx = this.loader.tileIndicesForGeo(block, targetLod, lat, lon);
+          if (!idx) continue;
+          const key = this.loader.tileKey(block.id, targetLod, idx.x, idx.y);
+          requests.set(key, { block, lod: targetLod, x: idx.x, y: idx.y });
+        }
+      }
+      if (requests.size <= this.localRasterMaxTiles || lod <= 2) {
+        await Promise.all([...requests.values()].map(r =>
+          this.loader.loadTile(r.block, r.lod, r.x, r.y)
+        ));
+        return { latSpan, lonSpan, lod, tileCount: requests.size };
+      }
+      lod--;
+    }
+    return { latSpan, lonSpan, lod: 0, tileCount: 0 };
+  }
+
+  async updateLocalRaster(centerGeo, distance) {
+    if (!this.localRasterMode || this.localRasterPending) return;
+    const requestedLod = localRefinementLod(distance, this.mobileTouchControls);
+    if (requestedLod < 0) return;
+
+    const centerKey = centerGeo.lat.toFixed(3) + ':' +
+      centerGeo.lon.toFixed(3) + ':' + distance.toFixed(1) + ':' + requestedLod;
+    if (centerKey === this.localRasterKey) return;
+
+    const generation = centerKey;
+    this.localRasterPending = generation;
+    try {
+      const prep = await this.preloadLocalRasterTiles(centerGeo, distance, requestedLod);
+      if (!this.localRasterMode || this.localRasterPending !== generation) return;
+
+      const canvas = this.localRasterCanvas;
+      const ctx = this.localRasterCtx;
+      const width = canvas.width;
+      const height = canvas.height;
+      const heights = new Float32Array(width * height);
+      let min = Infinity, max = -Infinity;
+
+      for (let y = 0; y < height; y++) {
+        const lat = THREE.MathUtils.clamp(
+          centerGeo.lat + prep.latSpan * (0.5 - (y + 0.5) / height),
+          -89.9999, 89.9999
+        );
+        for (let x = 0; x < width; x++) {
+          const lon = normalizeLon360(
+            centerGeo.lon + prep.lonSpan * ((x + 0.5) / width - 0.5)
+          );
+          const h = this.loader.sampleHeightGeoSync(lat, lon);
+          const i = y * width + x;
+          heights[i] = h == null ? NaN : h;
+          if (Number.isFinite(h)) {
+            min = Math.min(min, h);
+            max = Math.max(max, h);
+          }
+        }
+      }
+
+      if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+      const image = ctx.createImageData(width, height);
+      const range = Math.max(3, max - min);
+      for (let i = 0; i < heights.length; i++) {
+        const h = heights[i];
+        const p = i * 4;
+        if (!Number.isFinite(h)) {
+          image.data[p] = 70;
+          image.data[p + 1] = 70;
+          image.data[p + 2] = 66;
+          image.data[p + 3] = 255;
+          continue;
+        }
+        const shade = Math.round(52 + 150 * (h - min) / range);
+        image.data[p] = shade;
+        image.data[p + 1] = Math.round(shade * 0.98);
+        image.data[p + 2] = Math.round(shade * 0.93);
+        image.data[p + 3] = 255;
+      }
+      ctx.putImageData(image, 0, 0);
+      this.localRasterView = {
+        centerLat: centerGeo.lat,
+        centerLon: normalizeLon360(centerGeo.lon),
+        latSpan: prep.latSpan,
+        lonSpan: prep.lonSpan
+      };
+      this.localRasterKey = centerKey;
+      this.localRasterLastAt = performance.now();
+      this.imageStatus = 'Local DEM raster · LOD' + prep.lod + ' · ' + prep.tileCount + ' tiles';
+      this.status();
+    } catch (err) {
+      console.warn('[Browse local DEM raster]', err);
+    } finally {
+      if (this.localRasterPending === generation) this.localRasterPending = null;
+    }
+  }
+
+  refinementDescriptors(lod, centerGeo) {
+    const meta = this.loader.blockForGeo(centerGeo.lat, centerGeo.lon);
+    if (!meta) return [];
+    const block = this.loader.blocks.get(meta.id);
+    if (!block) return [];
+    const targetLod = Math.min(lod, block.maxLod);
+    const center = this.loader.tileIndicesForGeo(block, targetLod, centerGeo.lat, centerGeo.lon);
+    if (!center) return [];
+    const level = this.loader.level(block, targetLod);
+    const radius = targetLod >= 7 ? 2 : 1;
+    const out = [];
+    for (let dy = -radius; dy <= radius; dy++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        const x = center.x + dx, y = center.y + dy;
+        if (x < 0 || y < 0 || x >= level.countX || y >= level.countY) continue;
+        out.push({ block, lod: targetLod, x, y, key: this.loader.tileKey(block.id, targetLod, x, y) });
+      }
+    }
+    return out;
+  }
+
+  async loadLocalRefinement(lod, centerGeo) {
+    if (lod < 0) {
+      this.refinementGeneration++;
+      this.refinementKey = '';
+      for (const mesh of this.refinement.children) mesh.geometry.dispose();
+      this.refinement.clear();
+      return;
+    }
+
+    const descriptors = this.refinementDescriptors(lod, centerGeo);
+    if (!descriptors.length) return;
+    const key = descriptors.map(d => d.key).join('|');
+    if (key === this.refinementKey || this.refinementPending) return;
+
+    const generation = ++this.refinementGeneration;
+    this.refinementPending = key;
+    const next = new THREE.Group();
+    try {
+      const tiles = await Promise.all(descriptors.map(d => this.loader.loadTile(d.block, d.lod, d.x, d.y)));
+      if (generation !== this.refinementGeneration) return;
+      for (const tile of tiles) {
+        if (!tile) continue;
+        const mesh = this.makeTile(tile, this.refinementMaterial);
+        mesh.renderOrder = 2;
+        next.add(mesh);
+      }
+      if (!next.children.length) return;
+      for (const mesh of this.refinement.children) mesh.geometry.dispose();
+      this.refinement.clear();
+      for (const mesh of [...next.children]) this.refinement.add(mesh);
+      this.refinementKey = key;
+      this.demStatus = `DEM LOD${lod} 局部真实细化：${this.refinement.children.length} tiles`;
+    } catch (err) {
+      for (const mesh of next.children) mesh.geometry.dispose();
+      console.warn('[Browse local refinement]', err);
+    } finally {
+      if (this.refinementPending === key) this.refinementPending = null;
+      this.status();
     }
   }
 
@@ -836,7 +1131,7 @@ export class LunarBrowse {
     }
   }
 
-  makeTile(tile) {
+  makeTile(tile, material = this.material) {
     const positions = [], uvs = [], indices = [], n = tile.lod === 0 ? 65 : 33;
     const block = this.loader.blocks.get(tile.blockId);
     if (!block) throw new Error('Missing browse block ' + tile.blockId);
@@ -895,7 +1190,7 @@ export class LunarBrowse {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geometry.setIndex(indices);
-    return new THREE.Mesh(geometry, this.material);
+    return new THREE.Mesh(geometry, material);
   }
 
   render(renderer) {
@@ -916,6 +1211,24 @@ export class LunarBrowse {
       this.camera.lookAt(this.controls.target);
     }
     const browseDistance = this.camera.position.length();
+    if (!this.localRasterMode && browseDistance < this.localRasterEnterDistance) {
+      this.setLocalRasterMode(true);
+    } else if (this.localRasterMode && browseDistance > this.localRasterExitDistance) {
+      this.setLocalRasterMode(false);
+    }
+
+    const rasterCenter = pointGeo(this.camera.position);
+    if (this.localRasterMode) {
+      // Stay in Local DEM for the entire gesture. Never reveal albedo again once
+      // near-surface raster mode is active. Refresh during dragging with a small
+      // throttle; async tile/raster work remains single-flight via localRasterPending.
+      this.localRasterCanvas.style.visibility = 'visible';
+      const rasterRefreshMs = this.browseInteracting ? 120 : 180;
+      if (performance.now() - this.localRasterLastAt > rasterRefreshMs) {
+        this.updateLocalRaster(rasterCenter, browseDistance);
+      }
+    }
+
     const placeTier = mapPlaceTier(browseDistance);
     if (this.active && placeTier !== this.currentPlaceTier) this.rebuildNomenclaturePoints(placeTier);
     if (this.active) {
@@ -926,6 +1239,21 @@ export class LunarBrowse {
     const wanted = overviewLod(browseDistance);
     if (this.active && wanted !== this.currentLod && this.pendingLod === null && performance.now() > (this.retryAfter || 0)) {
       this.loadOverview(wanted);
+    }
+
+    // Keep a low-LOD global globe, then overlay only the camera-facing area
+    // with progressively finer REAL DEM. This avoids loading global LOD3-8.
+    if (this.active && this.currentLod >= 0 && this.pendingLod === null && !this.browseInteracting) {
+      const refineLod = localRefinementLod(browseDistance, this.mobileTouchControls);
+      if (this.localRasterMode) {
+        // Raster mode samples DEM directly and does not need additional 3D
+        // refinement meshes. Clear them to avoid duplicate memory/geometry.
+        if (this.refinement.children.length) this.loadLocalRefinement(-1, rasterCenter);
+      } else if (refineLod < 0) {
+        if (this.refinement.children.length) this.loadLocalRefinement(-1, rasterCenter);
+      } else if (performance.now() - this.lastBrowseInteraction > 180) {
+        this.loadLocalRefinement(refineLod, rasterCenter);
+      }
     }
     // Keep pins a constant apparent size when zooming close to the surface.
     for (const pin of [this.marker, this.roverMarker, ...this.siteMarkers]) {

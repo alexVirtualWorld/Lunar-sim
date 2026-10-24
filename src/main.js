@@ -2,7 +2,7 @@ import { LunarBrowse, coveredLatitude } from './browse/LunarBrowse.js';
 import * as THREE from 'three';
 import { APP_CONFIG, SITES, BOUNDARY_TEST_SITES, DEFAULT_SITE_ID } from './config.js';
 import { FloatingOrigin } from './geo/FloatingOrigin.js';
-import { formatLatLon } from './geo/LunarCoordinates.js';
+import { formatLatLon, normalizeLon360 } from './geo/LunarCoordinates.js';
 import { createLunarRegolithMaterial } from './materials/LunarRegolithMaterial.js';
 import { LunarTerrainManager } from './terrain/LunarTerrainManager.js';
 import { RoverController } from './vehicle/RoverController.js';
@@ -530,7 +530,9 @@ const browseButton = document.querySelector('#browse-toggle');
 const browse = new LunarBrowse(renderer, geo => {
   selectedLabel.textContent = formatLatLon(geo.lat, geo.lon);
   document.querySelector('#pick-lat').value = geo.lat.toFixed(6);
-  document.querySelector('#pick-lon').value = geo.lon.toFixed(6);
+  const lon360 = normalizeLon360(geo.lon);
+  const signedLon = lon360 > 180 ? lon360 - 360 : lon360;
+  document.querySelector('#pick-lon').value = signedLon.toFixed(6);
   const covered = coveredLatitude(geo.lat);
   driveButton.disabled = switching || !covered;
   // Selection is browse-only. Driving DEM is loaded by switchSite after explicit entry.
@@ -693,7 +695,10 @@ document.querySelector('#browse-home').addEventListener('click', () => {
 document.querySelector('#coordinate-form').addEventListener('submit', e => {
   e.preventDefault();
   if (switching) return;
-  browse.select({ lat: Number(document.querySelector('#pick-lat').value), lon: Number(document.querySelector('#pick-lon').value) });
+  browse.select({
+    lat: Number(document.querySelector('#pick-lat').value),
+    lon: normalizeLon360(Number(document.querySelector('#pick-lon').value))
+  });
   browse.focus(browse.selected);
 });
 driveButton.addEventListener('click', () => {
