@@ -8,6 +8,9 @@ const DISCOVERY_RADIUS_M = 35;
 const ROUTE_STEP_M = 20;
 const MAX_VALID_STEP_M = 250;
 const MAX_ROUTE_POINTS = 50000;
+const AUTO_ACTIVATE_RADIUS_M = 5000;
+const AUTO_ACTIVATE_INTERVAL_MS = 750;
+const AUTO_SWITCH_ADVANTAGE_M = 1500;
 
 function hash32(value) {
   let h = 2166136261 >>> 0;
@@ -68,6 +71,7 @@ export class ExplorationManager {
     this.lastRouteGeo = null;
     this.lastSaveAt = 0;
     this.routeVersion = 0;
+    this.lastAutoActivateCheckAt = -Infinity;
 
     this.save = this.loadSave();
     this.discovered = new Set(this.save.discoveredPOIs || []);
@@ -140,15 +144,64 @@ export class ExplorationManager {
     return best;
   }
 
-  activateFeature(featureOrId) {
+  nearestUncompletedExplorationFeature(lat, lon, maxDistanceM = AUTO_ACTIVATE_RADIUS_M) {
+    let best = null;
+    let bestD = maxDistanceM;
+    const activeId = Number(this.activeFeature?.id);
+    for (const f of this.explorationFeatures) {
+      const id = Number(f.id);
+      if (this.completed.has(id) || id === activeId) continue;
+      const d = geodeticOffsetMeters(lat, lon, f.lat, f.lon);
+      const m = Math.hypot(d.east, d.north);
+      if (m < bestD) {
+        bestD = m;
+        best = f;
+      }
+    }
+    return best ? { feature: best, distanceM: bestD } : null;
+  }
+
+  activateFeature(featureOrId, { preserveTracking = false, event = null } = {}) {
     const feature = typeof featureOrId === 'object' ? featureOrId : this.feature(featureOrId);
     this.activeFeature = feature?.explore ? feature : null;
     this.activePOIs = this.activeFeature ? this.generatePOIs(this.activeFeature) : [];
-    this.lastGeo = null;
-    this.lastRouteGeo = null;
+    if (!preserveTracking) {
+      this.lastGeo = null;
+      this.lastRouteGeo = null;
+    }
     this.updateObelisk();
-    this.notify();
+    this.notify(event);
     return this.activeFeature;
+  }
+
+  autoActivateNearbyFeature(geo) {
+    if (!this.explorationFeatures.length) return false;
+
+    const now = performance.now();
+    if (now - this.lastAutoActivateCheckAt < AUTO_ACTIVATE_INTERVAL_MS) return false;
+    this.lastAutoActivateCheckAt = now;
+
+    const candidate = this.nearestUncompletedExplorationFeature(
+      geo.lat,
+      geo.lon,
+      AUTO_ACTIVATE_RADIUS_M
+    );
+    if (!candidate) return false;
+
+    if (this.activeFeature && !this.completed.has(Number(this.activeFeature.id))) {
+      const activeDistance = distanceMeters(geo, this.activeFeature);
+      if (candidate.distanceM + AUTO_SWITCH_ADVANTAGE_M >= activeDistance) return false;
+    }
+
+    this.activateFeature(candidate.feature, {
+      preserveTracking: true,
+      event: {
+        type: 'feature_activated',
+        feature: candidate.feature,
+        distanceM: candidate.distanceM
+      }
+    });
+    return true;
   }
 
   generatePOIs(feature) {
@@ -364,6 +417,8 @@ export class ExplorationManager {
       this.lastRouteGeo = { lat: geo.lat, lon: geo.lon };
       this.routeVersion++;
     }
+
+    this.autoActivateNearbyFeature(geo);
 
     let changed = false;
     const events = [];

@@ -144,6 +144,10 @@ const exploration = new ExplorationManager({
   rover,
   onChange: (_manager, event) => {
     updateExplorationUI();
+    if (event?.type === 'feature_activated') {
+      if (ui.siteName && event.feature?.name) ui.siteName.textContent = event.feature.name;
+      return;
+    }
     if (event) showExplorationToast(event);
   }
 });
