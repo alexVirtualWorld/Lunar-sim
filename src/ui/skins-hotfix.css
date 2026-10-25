@@ -501,6 +501,16 @@ body[data-skin="C"] #skin-photo-scroll{
     background:color-mix(in srgb,var(--skin-accent) 75%,var(--skin-panel));
     border-color:var(--skin-accent);
   }
+  .mobile-joystick.is-cruise-armed .mobile-joystick-ring{
+    border-color:var(--skin-accent);
+    box-shadow:0 0 18px color-mix(in srgb,var(--skin-accent) 38%,transparent);
+  }
+  .mobile-joystick.is-cruise-armed .mobile-joystick-thumb{
+    background:var(--skin-accent)!important;
+    color:#10201c;
+    border-color:var(--skin-accent)!important;
+    box-shadow:0 0 0 5px color-mix(in srgb,var(--skin-accent) 18%,transparent),0 0 22px color-mix(in srgb,var(--skin-accent) 55%,transparent);
+  }
 
   .mobile-drive-actions{
     left:calc(18px + env(safe-area-inset-left))!important;

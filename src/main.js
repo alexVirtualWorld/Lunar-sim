@@ -80,6 +80,7 @@ const ui = {
   photoButton: document.querySelector('#photo-button'),
   photoStatus: document.querySelector('#photo-status'),
   headlightsToggle: document.querySelector('#headlights-toggle'),
+  cruiseToggle: document.querySelector('#cruise-toggle'),
   cameraRecenter: document.querySelector('#camera-recenter'),
   explorationProgress: document.querySelector('#exploration-progress'),
   explorationArea: document.querySelector('#exploration-area'),
@@ -272,6 +273,27 @@ function setHeadlights(value) {
 
 function toggleHeadlights() { setHeadlights(!rover.headlightsOn); }
 
+function syncCruiseUI() {
+  const on = !!rover.cruiseEnabled;
+  if (ui.cruiseToggle) {
+    ui.cruiseToggle.textContent = t(on ? 'exploration.cruiseOn' : 'exploration.cruiseOff');
+    ui.cruiseToggle.classList.toggle('is-active', on);
+    ui.cruiseToggle.setAttribute('aria-pressed', String(on));
+  }
+  if (ui.mobileCruise) {
+    ui.mobileCruise.classList.toggle('is-active', on);
+    ui.mobileCruise.setAttribute('aria-pressed', String(on));
+    const label = t(on ? 'exploration.cruiseOn' : 'exploration.cruiseOff');
+    ui.mobileCruise.setAttribute('aria-label', label);
+    ui.mobileCruise.title = label;
+  }
+}
+
+function toggleCruise() {
+  rover.toggleCruise?.();
+  syncCruiseUI();
+}
+
 function formatDistance(meters) {
   if (meters >= 1000) return `${(meters / 1000).toFixed(2)} km`;
   return `${Math.round(meters)} m`;
@@ -355,6 +377,7 @@ function syncBrowseRoute() {
 }
 
 ui.headlightsToggle?.addEventListener('click', toggleHeadlights);
+ui.cruiseToggle?.addEventListener('click', toggleCruise);
 ui.cameraRecenter?.addEventListener('click', () => roverCamera.recenter());
 ui.routeVisible?.addEventListener('change', e => {
   exploration.setShowRoute(e.currentTarget.checked);
@@ -367,6 +390,7 @@ ui.routeClear?.addEventListener('click', () => {
   syncBrowseRoute();
 });
 setHeadlights(rover.headlightsOn);
+syncCruiseUI();
 updateExplorationUI();
 
 
@@ -380,6 +404,7 @@ const mobileJoystick = document.querySelector('#mobile-joystick');
 const mobileJoystickThumb = document.querySelector('#mobile-joystick-thumb');
 const mobileJoystickKeys = new Set();
 let mobileJoystickPointer = null;
+let mobileCruiseArmed = false;
 
 function setMobileJoystickKeys(nextKeys) {
   for (const code of mobileJoystickKeys) {
@@ -395,8 +420,9 @@ function setMobileJoystickKeys(nextKeys) {
 function resetMobileJoystick() {
   setMobileJoystickKeys(new Set());
   mobileJoystickPointer = null;
+  mobileCruiseArmed = false;
   if (mobileJoystickThumb) mobileJoystickThumb.style.transform = 'translate(0px, 0px)';
-  mobileJoystick?.classList.remove('is-active');
+  mobileJoystick?.classList.remove('is-active', 'is-cruise-armed');
 }
 
 function updateMobileJoystick(clientX, clientY) {
@@ -405,8 +431,11 @@ function updateMobileJoystick(clientX, clientY) {
   const cx = rect.left + rect.width * 0.5;
   const cy = rect.top + rect.height * 0.5;
   const maxRadius = Math.max(1, Math.min(rect.width, rect.height) * 0.30);
-  let dx = clientX - cx;
-  let dy = clientY - cy;
+
+  const rawDx = clientX - cx;
+  const rawDy = clientY - cy;
+  let dx = rawDx;
+  let dy = rawDy;
   const distance = Math.hypot(dx, dy);
   if (distance > maxRadius) {
     const scale = maxRadius / distance;
@@ -414,7 +443,27 @@ function updateMobileJoystick(clientX, clientY) {
     dy *= scale;
   }
 
-  mobileJoystickThumb.style.transform = 'translate(' + dx.toFixed(1) + 'px, ' + dy.toFixed(1) + 'px)';
+  // Pull noticeably beyond the normal forward range to arm cruise.
+  // Keep the gesture mostly vertical so hard diagonal steering does not
+  // accidentally engage it.
+  const cruiseThreshold = maxRadius * 1.35;
+  const cruiseHorizontalLimit = maxRadius * 0.75;
+  const cruiseArmed = rawDy <= -cruiseThreshold && Math.abs(rawDx) <= cruiseHorizontalLimit;
+  if (cruiseArmed !== mobileCruiseArmed) {
+    mobileCruiseArmed = cruiseArmed;
+    mobileJoystick.classList.toggle('is-cruise-armed', cruiseArmed);
+    if (cruiseArmed) navigator.vibrate?.(18);
+  }
+
+  // Normal driving input remains clamped to the regular joystick radius.
+  // Only the thumb visual is allowed to stretch upward into the cruise zone.
+  let visualDx = dx;
+  let visualDy = dy;
+  if (cruiseArmed) {
+    visualDx = THREE.MathUtils.clamp(rawDx, -cruiseHorizontalLimit, cruiseHorizontalLimit);
+    visualDy = Math.max(rawDy, -maxRadius * 1.55);
+  }
+  mobileJoystickThumb.style.transform = 'translate(' + visualDx.toFixed(1) + 'px, ' + visualDy.toFixed(1) + 'px)';
 
   const x = dx / maxRadius;
   const y = dy / maxRadius;
@@ -468,13 +517,18 @@ mobileJoystick?.addEventListener('pointermove', event => {
   event.stopPropagation();
   updateMobileJoystick(event.clientX, event.clientY);
 });
-const releaseMobileJoystick = event => {
+const releaseMobileJoystick = (event, commitCruise = false) => {
   if (mobileJoystickPointer != null && event?.pointerId != null && event.pointerId !== mobileJoystickPointer) return;
+  const shouldEnableCruise = commitCruise && mobileCruiseArmed;
   resetMobileJoystick();
+  if (shouldEnableCruise) {
+    rover.setCruise?.(true);
+    syncCruiseUI();
+  }
 };
-mobileJoystick?.addEventListener('pointerup', releaseMobileJoystick);
-mobileJoystick?.addEventListener('pointercancel', releaseMobileJoystick);
-mobileJoystick?.addEventListener('lostpointercapture', releaseMobileJoystick);
+mobileJoystick?.addEventListener('pointerup', event => releaseMobileJoystick(event, true));
+mobileJoystick?.addEventListener('pointercancel', event => releaseMobileJoystick(event, false));
+mobileJoystick?.addEventListener('lostpointercapture', event => releaseMobileJoystick(event, false));
 mobileJoystick?.addEventListener('contextmenu', event => event.preventDefault());
 
 document.querySelectorAll('[data-rover-key]').forEach(button => {
@@ -913,6 +967,7 @@ function loop() {
   if (mode === 'drive' && !switching && driveReady && terrain.manifest) {
     terrain.update(rover.east, rover.north);
     if (simDt > 0) rover.update(simDt);
+    syncCruiseUI();
     const oldOriginEast = floatingOrigin.east;
     const oldOriginNorth = floatingOrigin.north;
     const shifted = floatingOrigin.update(rover.east, rover.north);

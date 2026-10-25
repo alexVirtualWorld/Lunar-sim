@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createFallbackRover, loadRoverTemplate, RoverWheelAnimator } from './RoverVisual.js';
 
@@ -17,6 +17,9 @@ export class RoverController {
     this.heading = 0;
     this.speed = 0;
     this.steer = 0;
+    this.cruiseEnabled = false;
+    this.cruiseSpeed = 0;
+    this.cruiseForwardHeldAtEnable = false;
     this.keys = new Set();
     this.virtualKeys = new Set();
     this.inputEnabled = true;
@@ -88,6 +91,29 @@ export class RoverController {
   clearInputs() {
     this.keys.clear();
     this.virtualKeys.clear();
+    this.setCruise(false);
+  }
+
+  setCruise(value) {
+    const wantOn = !!value;
+    if (!wantOn) {
+      this.cruiseEnabled = false;
+      this.cruiseSpeed = 0;
+      this.cruiseForwardHeldAtEnable = false;
+      return false;
+    }
+
+    // Cruise control is intentionally forward-only. Capture the current
+    // forward velocity exactly; steering remains fully manual.
+    if (!(this.speed > 0.05)) return false;
+    this.cruiseSpeed = THREE.MathUtils.clamp(this.speed, 0, this.config.maxSpeed);
+    this.cruiseEnabled = true;
+    this.cruiseForwardHeldAtEnable = this.hasInput('KeyW');
+    return true;
+  }
+
+  toggleCruise() {
+    return this.setCruise(!this.cruiseEnabled);
   }
 
   hasInput(code) {
@@ -111,6 +137,7 @@ export class RoverController {
     this.east = east; this.north = north;
     this.heading = THREE.MathUtils.degToRad(headingDeg);
     this.speed = 0; this.steer = 0;
+    this.setCruise(false);
     this.wheelSpin = 0;
     this.suspensionVisual.fill(0);
     this.verticalVelocity = 0;
@@ -322,9 +349,26 @@ export class RoverController {
     const steerInput = acceptInput ? (this.hasInput('KeyD') ? 1 : 0) - (this.hasInput('KeyA') ? 1 : 0) : 0;
     const handbrake = acceptInput && (this.hasInput('ShiftLeft') || this.hasInput('ShiftRight'));
 
+    // Allow cruise to be enabled while forward input is already held.
+    // That existing hold is accepted until it is released once.
+    if (this.cruiseEnabled) {
+      if (this.cruiseForwardHeldAtEnable && !this.hasInput('KeyW')) {
+        this.cruiseForwardHeldAtEnable = false;
+      }
+      const newForwardPress = throttle > 0 && !this.cruiseForwardHeldAtEnable;
+      if (newForwardPress || throttle < 0 || handbrake) {
+        this.setCruise(false);
+      }
+    }
+
     if (this.grounded) {
-      if (throttle !== 0) this.speed += throttle * (throttle > 0 ? this.config.accel : this.config.brake) * dt;
-      else this.speed *= Math.exp(-1.05 * dt);
+      if (this.cruiseEnabled) {
+        this.speed = this.cruiseSpeed;
+      } else if (throttle !== 0) {
+        this.speed += throttle * (throttle > 0 ? this.config.accel : this.config.brake) * dt;
+      } else {
+        this.speed *= Math.exp(-1.05 * dt);
+      }
       if (handbrake) this.speed *= Math.exp(-2.7 * dt);
       this.steer = THREE.MathUtils.damp(this.steer, steerInput, 7, dt);
 
@@ -346,10 +390,12 @@ export class RoverController {
         this.north = nextNorth;
       } else {
         this.speed = 0;
+        this.setCruise(false);
         this.terrain.preloadGround(nextEast, nextNorth).catch(() => {});
       }
     } else {
       this.speed *= 0.2;
+      this.setCruise(false);
     }
     this.updateTransform(dt, false);
     this.updateWheelVisualState(dt);
@@ -359,3 +405,6 @@ export class RoverController {
     return this.terrain.sampleElevation(this.east, this.north) ?? 0;
   }
 }
+
+
+

@@ -153,7 +153,7 @@ export class ExplorationManager {
 
   generatePOIs(feature) {
     const random = rngFor(`poi:${feature.id}`);
-    const count = 5 + Math.floor(random() * 6);
+    const count = 3 + Math.floor(random() * 3);
     const diameterM = Math.max(1000, Number(feature.diameterKm || 0) * 1000);
     const minRadius = Math.max(350, Math.min(1800, diameterM * 0.08));
     const maxRadius = Math.max(minRadius + 500, Math.min(12000, diameterM * 0.35 + 1800));
