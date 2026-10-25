@@ -242,9 +242,14 @@ export class RoverController {
       this.object.position.copy(targetPos);
       if (this.grounded) this.object.quaternion.copy(targetQ);
     } else {
-      const a = 1 - Math.exp(-16 * dt);
-      this.object.position.x = THREE.MathUtils.lerp(this.object.position.x, targetPos.x, a);
-      this.object.position.z = THREE.MathUtils.lerp(this.object.position.z, targetPos.z, a);
+      // Keep the visible rover at the same horizontal position used for all
+      // ground-height/support sampling. The previous X/Z lerp introduced a
+      // speed-dependent spatial lag: Y already matched the terrain at the new
+      // logical position while the mesh was still behind on X/Z, which made
+      // high-speed downhill motion clip into the surface and uphill motion
+      // appear to float. Orientation smoothing is kept for visual stability.
+      this.object.position.x = targetPos.x;
+      this.object.position.z = targetPos.z;
       this.object.position.y = this.bodyY;
       if (this.grounded) this.object.quaternion.slerp(targetQ, 1 - Math.exp(-10 * dt));
     }
