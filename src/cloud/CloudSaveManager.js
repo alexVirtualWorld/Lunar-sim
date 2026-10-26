@@ -7,7 +7,6 @@ import {
   onAuthStateChanged,
   setPersistence,
   signInWithPopup,
-  signInWithRedirect,
   signOut as firebaseSignOut
 } from 'firebase/auth';
 import {
@@ -131,21 +130,14 @@ export class CloudSaveManager {
     provider.setCustomParameters({ prompt: 'select_account' });
     this.emit({ status: 'signing_in', error: null });
 
-    const useRedirect = globalThis.matchMedia?.('(pointer: coarse)').matches || innerWidth < 700;
     try {
-      if (useRedirect) {
-        await signInWithRedirect(this.auth, provider);
-        return true;
-      }
+      // Use popup on desktop and mobile. Redirect auth can fail to restore
+      // Firebase state in Safari because of cross-site storage restrictions.
       const result = await signInWithPopup(this.auth, provider);
       this.user = result.user;
       this.emit({ status: 'signed_in', error: null });
       return true;
     } catch (error) {
-      if (error?.code === 'auth/popup-blocked') {
-        await signInWithRedirect(this.auth, provider);
-        return true;
-      }
       if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
         this.emit({ status: this.user ? 'signed_in' : 'signed_out', error: null });
         return false;
