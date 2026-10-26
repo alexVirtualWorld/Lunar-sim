@@ -11,6 +11,7 @@ const DICT = {
   en: {
     "network.online":"ONLINE",
     "network.offline":"OFFLINE",
+    "cloud.notConfigured":"CLOUD OFF","cloud.initializing":"CLOUD INIT","cloud.signedOut":"CLOUD READY","cloud.signingIn":"SIGNING IN…","cloud.signedIn":"SIGNED IN","cloud.syncing":"SYNCING…","cloud.synced":"SYNCED","cloud.testing":"SYNC TEST…","cloud.testOk":"CLOUD OK","cloud.error":"CLOUD ERROR","cloud.signIn":"GOOGLE SIGN IN","cloud.signOut":"SIGN OUT","cloud.test":"SYNC NOW",
     "network.pilots":"PILOTS: {count}",
     "hud.heading":"HDG",
     "hud.controls":"W/S Drive · A/D Steer · Shift Brake · L Lights · C Camera · R Reset · B Browse",
@@ -31,6 +32,7 @@ const DICT = {
   'zh-CN': {
     "network.online":"已联机",
     "network.offline":"离线",
+    "cloud.notConfigured":"云同步未配置","cloud.initializing":"云同步初始化","cloud.signedOut":"云同步就绪","cloud.signingIn":"正在登录…","cloud.signedIn":"已登录","cloud.syncing":"同步中…","cloud.synced":"已同步","cloud.testing":"同步测试中…","cloud.testOk":"云端正常","cloud.error":"云同步错误","cloud.signIn":"谷歌登录","cloud.signOut":"退出登录","cloud.test":"立即同步",
     "network.pilots":"玩家：{count}",
     "hud.heading":"航向",
     "hud.controls":"W/S 驾驶 · A/D 转向 · Shift 刹车 · L 车灯 · C 镜头 · R 重置 · B 浏览",
@@ -50,6 +52,7 @@ const DICT = {
   ja: {
     "network.online":"オンライン",
     "network.offline":"オフライン",
+    "cloud.notConfigured":"クラウド未設定","cloud.initializing":"クラウド初期化","cloud.signedOut":"クラウド準備完了","cloud.signingIn":"ログイン中…","cloud.signedIn":"ログイン済み","cloud.syncing":"同期中…","cloud.synced":"同期済み","cloud.testing":"同期テスト中…","cloud.testOk":"クラウド正常","cloud.error":"クラウドエラー","cloud.signIn":"Google ログイン","cloud.signOut":"ログアウト","cloud.test":"今すぐ同期",
     "network.pilots":"プレイヤー：{count}",
     "hud.heading":"方位",
     "hud.controls":"W/S 走行 · A/D 操舵 · Shift ブレーキ · L ライト · C カメラ · R リセット · B 閲覧",
@@ -69,6 +72,7 @@ const DICT = {
   ko: {
     "network.online":"온라인",
     "network.offline":"오프라인",
+    "cloud.notConfigured":"클라우드 미설정","cloud.initializing":"클라우드 초기화","cloud.signedOut":"클라우드 준비됨","cloud.signingIn":"로그인 중…","cloud.signedIn":"로그인됨","cloud.syncing":"동기화 중…","cloud.synced":"동기화됨","cloud.testing":"동기화 테스트 중…","cloud.testOk":"클라우드 정상","cloud.error":"클라우드 오류","cloud.signIn":"Google 로그인","cloud.signOut":"로그아웃","cloud.test":"지금 동기화",
     "network.pilots":"플레이어: {count}",
     "hud.heading":"방향",
     "hud.controls":"W/S 주행 · A/D 조향 · Shift 브레이크 · L 라이트 · C 카메라 · R 초기화 · B 둘러보기",

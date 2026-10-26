@@ -98,6 +98,11 @@ const ui = {
   discoveryToastMain: document.querySelector('#discovery-toast-main'),
   discoveryToastSub: document.querySelector('#discovery-toast-sub'),
   languageSelect: document.querySelector('#language-select'),
+  cloudStatus: document.querySelector('#cloud-status'),
+  cloudUser: document.querySelector('#cloud-user'),
+  cloudSignIn: document.querySelector('#cloud-sign-in'),
+  cloudSyncTest: document.querySelector('#cloud-sync-test'),
+  cloudSignOut: document.querySelector('#cloud-sign-out'),
   debugToggle: document.querySelector('#debug-toggle'),
   debugHud: document.querySelector('#debug-hud'),
   debugClose: document.querySelector('#debug-close'),
@@ -138,10 +143,13 @@ const terrain = new LunarTerrainManager({
 const rover = new RoverController({ scene, terrain, floatingOrigin, config: APP_CONFIG });
 const roverCamera = new RoverCamera(camera, renderer, rover, terrain, APP_CONFIG.camera);
 const celestial = new LunarCelestialSystem({ scene, camera, sunLight: sun, starGroup });
+let cloudSave = null;
+
 const exploration = new ExplorationManager({
   scene,
   terrain,
   rover,
+  onSaveChange: () => cloudSave?.scheduleSync(),
   onChange: (_manager, event) => {
     updateExplorationUI();
     if (event?.type === 'feature_activated') {
@@ -151,6 +159,51 @@ const exploration = new ExplorationManager({
     if (event) showExplorationToast(event);
   }
 });
+
+
+const firebaseConfigured = Boolean(
+  import.meta.env.VITE_FIREBASE_API_KEY &&
+  import.meta.env.VITE_FIREBASE_AUTH_DOMAIN &&
+  import.meta.env.VITE_FIREBASE_PROJECT_ID &&
+  import.meta.env.VITE_FIREBASE_APP_ID
+);
+let cloudState = {
+  configured: firebaseConfigured,
+  status: firebaseConfigured ? 'initializing' : 'unconfigured',
+  user: null,
+  error: null,
+  lastTestAt: null
+};
+
+async function initCloudSave() {
+  if (!firebaseConfigured) {
+    updateCloudUI();
+    return;
+  }
+
+  try {
+    const { CloudSaveManager } = await import('./cloud/CloudSaveManager.js');
+    cloudSave = new CloudSaveManager({
+      getLocalSnapshot: () => exploration.cloudSnapshot(),
+      applyMergedSnapshot: snapshot => {
+        exploration.applyCloudSnapshot(snapshot);
+        syncBrowseRoute();
+        updateExplorationUI();
+      },
+      onStateChange: state => {
+        cloudState = state;
+        updateCloudUI();
+      }
+    });
+    await cloudSave.init();
+  } catch (error) {
+    console.error('[CloudSave] lazy load failed', error);
+    cloudState = { ...cloudState, status: 'error', error };
+    updateCloudUI();
+  }
+}
+
+initCloudSave();
 
 
 function runWhenIdle(fn, timeout = 1500) {
@@ -671,11 +724,58 @@ function updateDebugHud() {
   if (ui.debugCache) ui.debugCache.textContent = (stats.cachedHeightTiles || 0) + ' tiles · ' + (stats.cachedPacks || 0) + ' packs';
 }
 
+function updateCloudUI() {
+  const state = cloudState;
+  const keyByStatus = {
+    unconfigured: 'cloud.notConfigured',
+    initializing: 'cloud.initializing',
+    signed_out: 'cloud.signedOut',
+    signing_in: 'cloud.signingIn',
+    signed_in: 'cloud.signedIn',
+    syncing: 'cloud.syncing',
+    synced: 'cloud.synced',
+    testing: 'cloud.testing',
+    test_ok: 'cloud.testOk',
+    error: 'cloud.error'
+  };
+
+  if (ui.cloudStatus) {
+    ui.cloudStatus.textContent = t(keyByStatus[state.status] || 'cloud.error');
+    ui.cloudStatus.classList.toggle('warn', state.status === 'error' || state.status === 'unconfigured');
+    ui.cloudStatus.classList.toggle('ok', state.status === 'signed_in' || state.status === 'synced' || state.status === 'test_ok');
+    ui.cloudStatus.title = state.error?.message || '';
+  }
+
+  const userLabel = state.user?.displayName || state.user?.email || '';
+  if (ui.cloudUser) {
+    ui.cloudUser.textContent = userLabel;
+    ui.cloudUser.hidden = !userLabel;
+  }
+
+  const busy = state.status === 'initializing' || state.status === 'signing_in' || state.status === 'testing' || state.status === 'syncing';
+  if (ui.cloudSignIn) {
+    ui.cloudSignIn.hidden = Boolean(state.user);
+    ui.cloudSignIn.disabled = !state.configured || busy;
+    ui.cloudSignIn.textContent = t('cloud.signIn');
+  }
+  if (ui.cloudSyncTest) {
+    ui.cloudSyncTest.hidden = !state.user;
+    ui.cloudSyncTest.disabled = busy;
+    ui.cloudSyncTest.textContent = t('cloud.test');
+  }
+  if (ui.cloudSignOut) {
+    ui.cloudSignOut.hidden = !state.user;
+    ui.cloudSignOut.disabled = busy;
+    ui.cloudSignOut.textContent = t('cloud.signOut');
+  }
+}
+
 function refreshLocalizedUI() {
   applyI18n();
   if (ui.languageSelect) ui.languageSelect.value = document.documentElement.lang;
   setHeadlights(rover.headlightsOn);
   updateExplorationUI();
+  updateCloudUI();
   if (ui.timePlay) ui.timePlay.textContent = celestial.playing ? t('celestial.pause') : t('celestial.play');
   browseButton.textContent = mode === 'browse' ? t('browse.toggleReturn') : t('browse.toggle');
   ui.siteName.textContent = activeSite ? (activeSite.customLanding ? t('site.customLanding') : activeSite.name) : t('hud.loadingTerrain');
@@ -690,6 +790,9 @@ ui.languageSelect?.addEventListener('change', e => {
   setLanguage(e.currentTarget.value);
   refreshLocalizedUI();
 });
+ui.cloudSignIn?.addEventListener('click', () => cloudSave?.signIn());
+ui.cloudSyncTest?.addEventListener('click', () => cloudSave?.testWrite());
+ui.cloudSignOut?.addEventListener('click', () => cloudSave?.signOut());
 ui.debugToggle?.addEventListener('click', () => setDebugEnabled(!debugEnabled));
 ui.debugClose?.addEventListener('click', () => setDebugEnabled(false));
 ui.debugProviderBoundaries?.addEventListener('change', e => {

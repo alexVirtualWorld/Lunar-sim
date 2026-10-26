@@ -40,8 +40,9 @@ function distanceMeters(a, b) {
 
 function defaultSave() {
   return {
-    version: 1,
+    version: 2,
     totalDistanceMeters: 0,
+    routeGeneration: 0,
     routes: [],
     discoveredPOIs: [],
     completedFeatures: [],
@@ -55,11 +56,12 @@ function defaultSave() {
 }
 
 export class ExplorationManager {
-  constructor({ scene, terrain, rover, onChange = null }) {
+  constructor({ scene, terrain, rover, onChange = null, onSaveChange = null }) {
     this.scene = scene;
     this.terrain = terrain;
     this.rover = rover;
     this.onChange = onChange;
+    this.onSaveChange = onSaveChange;
     this.catalog = null;
     this.features = [];
     this.featureById = new Map();
@@ -103,7 +105,7 @@ export class ExplorationManager {
     }
   }
 
-  persist(force = false) {
+  persist(force = false, notifyCloud = true) {
     const now = performance.now();
     if (!force && now - this.lastSaveAt < 1200) return;
     this.lastSaveAt = now;
@@ -114,6 +116,7 @@ export class ExplorationManager {
     this.save.settings = { ...this.settings };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.save));
+      if (notifyCloud) this.onSaveChange?.(this);
     } catch (err) {
       console.warn('[Exploration] save write failed', err);
     }
@@ -344,6 +347,56 @@ export class ExplorationManager {
     this.obelisk.visible = true;
   }
 
+  cloudSnapshot() {
+    return {
+      version: 2,
+      totalDistanceMeters: Number(this.save.totalDistanceMeters || 0),
+      routeGeneration: Number(this.save.routeGeneration || 0),
+      routes: (this.save.routes || []).map(p => ({
+        lat: Number(p.lat),
+        lon: Number(p.lon),
+        t: Number(p.t)
+      })).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lon) && Number.isFinite(p.t)),
+      discoveredPOIs: [...this.discovered],
+      completedFeatures: [...this.completed],
+      unlockedObelisks: [...this.unlocked],
+      completionDates: { ...(this.save.completionDates || {}) },
+      settings: { ...this.settings }
+    };
+  }
+
+  applyCloudSnapshot(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') return false;
+
+    const next = {
+      ...defaultSave(),
+      ...snapshot,
+      version: 2,
+      routeGeneration: Number(snapshot.routeGeneration || 0),
+      routes: Array.isArray(snapshot.routes) ? snapshot.routes.slice(-MAX_ROUTE_POINTS) : [],
+      settings: { ...defaultSave().settings, ...(snapshot.settings || {}) }
+    };
+
+    this.save = next;
+    this.discovered = new Set(next.discoveredPOIs || []);
+    this.completed = new Set(next.completedFeatures || []);
+    this.unlocked = new Set(next.unlockedObelisks || []);
+    this.settings = { ...next.settings };
+    this.startedFeatures = new Set();
+    for (const poiId of this.discovered) {
+      const featureId = Number(String(poiId).split(':', 1)[0]);
+      if (Number.isFinite(featureId)) this.startedFeatures.add(featureId);
+    }
+
+    const last = next.routes[next.routes.length - 1];
+    this.lastRouteGeo = last ? { lat: last.lat, lon: last.lon } : null;
+    this.routeVersion++;
+    this.persist(true, false);
+    this.updateObelisk();
+    this.notify();
+    return true;
+  }
+
   setShowRoute(value) {
     this.settings.showRoute = !!value;
     this.persist(true);
@@ -358,6 +411,7 @@ export class ExplorationManager {
   }
 
   clearRoute() {
+    this.save.routeGeneration = Number(this.save.routeGeneration || 0) + 1;
     this.save.routes = [];
     this.lastRouteGeo = null;
     this.routeVersion++;

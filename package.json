@@ -7,13 +7,19 @@
     "dev": "concurrently \"vite --host 0.0.0.0\" \"node server/index.mjs\"",
     "build": "vite build",
     "start": "node server/index.mjs",
-    "data:moon": "python tools/lunar-data/download_moon_data.py",
-    "data:moon:validate": "python tools/lunar-data/download_moon_data.py --validate-only",
-    "data:global": "python tools/lunar-data/download_moon_data.py --part global",
-    "data:polar": "python tools/lunar-data/download_moon_data.py --part polar",
-    "data:global:index": "python tools/lunar-data/build_global.py --index-only --max-lod 4",
+    "data:apollo15": "python tools/lunar-data/build_site.py --site apollo15",
+    "data:tycho": "python tools/lunar-data/build_site.py --site tycho",
+    "data:aristarchus": "python tools/lunar-data/build_site.py --site aristarchus",
+    "data:copernicus": "python tools/lunar-data/build_site.py --site copernicus",
+    "data:all": "python tools/lunar-data/build_site.py --site all",
+    "data:global:index": "python tools/lunar-data/build_global.py --index-only",
+    "data:global:test": "python tools/lunar-data/build_global.py --block 00N_30N_E000_E045 --max-lod 4 --clean-cache",
+    "data:global": "python tools/lunar-data/build_global.py --all --max-lod 8 --clean-cache && python tools/lunar-data/stitch_global.py",
     "data:global:stitch": "python tools/lunar-data/stitch_global.py",
     "data:global:validate-seams": "python tools/lunar-data/stitch_global.py --validate-only",
+    "data:polar:north": "python tools/lunar-data/build_polar.py --hemisphere north",
+    "data:polar:south": "python tools/lunar-data/build_polar.py --hemisphere south",
+    "data:polar": "python tools/lunar-data/build_polar.py --all --clean-cache && python tools/lunar-data/stitch_polar_boundary.py",
     "data:polar:stitch": "python tools/lunar-data/stitch_polar_boundary.py",
     "data:polar:validate": "python tools/lunar-data/stitch_polar_boundary.py --validate-only",
     "data:polar:test": "node tools/lunar-data/test_polar_runtime.mjs && node tools/lunar-data/test_polar_terrain_manager.mjs && node tools/lunar-data/test_polar_seam_v2.mjs"
@@ -21,6 +27,7 @@
   "dependencies": {
     "astronomy-engine": "^2.1.19",
     "express": "^5.1.0",
+    "firebase": "^13.1.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "three": "^0.180.0"
@@ -28,10 +35,5 @@
   "devDependencies": {
     "concurrently": "^9.2.1",
     "vite": "^7.1.7"
-  },
-  "description": "Browser-based global lunar rover simulator using real lunar DEM data.",
-  "license": "MIT",
-  "engines": {
-    "node": ">=20"
   }
 }
