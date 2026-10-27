@@ -213,10 +213,18 @@ export class CloudSaveManager {
     if (!meta) return null;
 
     const generation = Number(meta.routeGeneration || 0);
+    const routeSnapshotId = typeof meta.routeSnapshotId === 'string' && meta.routeSnapshotId
+      ? meta.routeSnapshotId
+      : null;
     const routeChunks = [];
     chunksSnap.forEach(snapshot => {
       const data = snapshot.data();
-      if (Number(data.routeGeneration || 0) !== generation) return;
+      // New snapshots are isolated by upload ID. Legacy saves still use routeGeneration.
+      if (routeSnapshotId) {
+        if (data.routeSnapshotId !== routeSnapshotId) return;
+      } else if (Number(data.routeGeneration || 0) !== generation) {
+        return;
+      }
       routeChunks.push({
         index: Number(data.index || 0),
         points: Array.isArray(data.points) ? data.points : []
@@ -279,7 +287,12 @@ export class CloudSaveManager {
     const uid = this.user.uid;
     const routeGeneration = Number(snapshot.routeGeneration || 0);
     const points = Array.isArray(snapshot.routes) ? snapshot.routes : [];
-    const chunkSize = 500;
+
+    // Keep each document and each request small. Firestore's request-size
+    // limit is byte-based, not just a limit on the number of writes.
+    const chunkSize = 250;
+    const writesPerBatch = 20;
+    const routeSnapshotId = Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
     const chunks = [];
     for (let i = 0; i < points.length; i += chunkSize) {
       chunks.push(points.slice(i, i + chunkSize));
@@ -287,54 +300,64 @@ export class CloudSaveManager {
 
     const chunkCollection = collection(this.db, 'users', uid, 'routeChunks');
     const existing = await getDocs(chunkCollection);
-    const desiredIds = new Set(chunks.map((_, i) => `g${routeGeneration}_c${String(i).padStart(4, '0')}`));
+    const desiredIds = new Set(
+      chunks.map((_, index) => 's' + routeSnapshotId + '_c' + String(index).padStart(4, '0'))
+    );
 
-    const operations = [];
-    existing.forEach(snapshotDoc => {
-      if (!desiredIds.has(snapshotDoc.id)) operations.push({ type: 'delete', ref: snapshotDoc.ref });
-    });
-    chunks.forEach((chunk, index) => {
-      const id = `g${routeGeneration}_c${String(index).padStart(4, '0')}`;
-      operations.push({
-        type: 'set',
-        ref: doc(this.db, 'users', uid, 'routeChunks', id),
-        data: {
-          routeGeneration,
-          index,
-          points: chunk,
-          pointCount: chunk.length,
-          updatedAt: serverTimestamp()
-        }
-      });
-    });
-
-    const metaRef = doc(this.db, 'users', uid, 'exploration', 'main');
-    operations.push({
-      type: 'set',
-      ref: metaRef,
-      data: {
-        version: 2,
-        totalDistanceMeters: Number(snapshot.totalDistanceMeters || 0),
-        routeGeneration,
-        routePointCount: points.length,
-        routeChunkCount: chunks.length,
-        discoveredPOIs: snapshot.discoveredPOIs || [],
-        completedFeatures: snapshot.completedFeatures || [],
-        unlockedObelisks: snapshot.unlockedObelisks || [],
-        completionDates: snapshot.completionDates || {},
-        settings: snapshot.settings || {},
-        updatedAt: serverTimestamp(),
-        clientUpdatedAt: new Date().toISOString()
-      }
-    });
-
-    for (let i = 0; i < operations.length; i += 450) {
+    // Stage the new snapshot under unique document IDs. Do not delete or
+    // overwrite the currently active snapshot while these batches are uploading.
+    for (let start = 0; start < chunks.length; start += writesPerBatch) {
       const batch = writeBatch(this.db);
-      for (const op of operations.slice(i, i + 450)) {
-        if (op.type === 'delete') batch.delete(op.ref);
-        else batch.set(op.ref, op.data, { merge: false });
+      const end = Math.min(start + writesPerBatch, chunks.length);
+      for (let index = start; index < end; index++) {
+        const id = 's' + routeSnapshotId + '_c' + String(index).padStart(4, '0');
+        batch.set(doc(this.db, 'users', uid, 'routeChunks', id), {
+          routeGeneration,
+          routeSnapshotId,
+          index,
+          points: chunks[index],
+          pointCount: chunks[index].length,
+          updatedAt: serverTimestamp()
+        }, { merge: false });
       }
       await batch.commit();
+    }
+
+    // Publish metadata only after every chunk has committed. Readers continue
+    // using the previous complete snapshot if any upload batch fails.
+    const metaRef = doc(this.db, 'users', uid, 'exploration', 'main');
+    await setDoc(metaRef, {
+      version: 2,
+      totalDistanceMeters: Number(snapshot.totalDistanceMeters || 0),
+      routeGeneration,
+      routeSnapshotId,
+      routePointCount: points.length,
+      routeChunkCount: chunks.length,
+      discoveredPOIs: snapshot.discoveredPOIs || [],
+      completedFeatures: snapshot.completedFeatures || [],
+      unlockedObelisks: snapshot.unlockedObelisks || [],
+      completionDates: snapshot.completionDates || {},
+      settings: snapshot.settings || {},
+      updatedAt: serverTimestamp(),
+      clientUpdatedAt: new Date().toISOString()
+    }, { merge: false });
+
+    // Cleanup is maintenance after the active pointer has switched. If cleanup
+    // fails, the published snapshot is still valid and a later sync can retry it.
+    const staleRefs = [];
+    existing.forEach(snapshotDoc => {
+      if (!desiredIds.has(snapshotDoc.id)) staleRefs.push(snapshotDoc.ref);
+    });
+    try {
+      for (let start = 0; start < staleRefs.length; start += writesPerBatch) {
+        const batch = writeBatch(this.db);
+        for (const ref of staleRefs.slice(start, start + writesPerBatch)) {
+          batch.delete(ref);
+        }
+        await batch.commit();
+      }
+    } catch (error) {
+      console.warn('[CloudSave] stale route chunk cleanup failed; active snapshot is safe', error);
     }
   }
 
